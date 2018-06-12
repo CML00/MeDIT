@@ -1,7 +1,6 @@
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
 import numpy as np
 
-
 def BluryEdgeOfROI(initial_ROI):
     if len(np.shape(initial_ROI)) == 2:
         kernel = np.ones((3, 3))

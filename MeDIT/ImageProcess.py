@@ -4,7 +4,7 @@ from scipy.ndimage.morphology import binary_dilation
 import copy
 import SimpleITK as sitk
 
-from Normalize import IntensityTransfer
+from MeDIT.Normalize import IntensityTransfer
 
 
 def FindBoundaryOfBinaryMask(image):

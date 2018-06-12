@@ -5,7 +5,7 @@ from scipy.ndimage.morphology import binary_dilation
 import matplotlib.pyplot as plt
 import sys
 
-from Normalize import Normalize01
+from MeDIT.Normalize import Normalize01
 
 def DrawBoundaryOfBinaryMask(image, ROI):
     plt.imshow(image, cmap='Greys_r')
