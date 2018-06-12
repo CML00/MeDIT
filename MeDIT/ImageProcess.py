@@ -204,7 +204,7 @@ def Crop3DImage(image, shape):
     else:
         new_image = np.zeros((shape[0], image.shape[1], image.shape[2]))
         center = shape[0] // 2
-        if image.shape[0] % 2 ==0:
+        if image.shape[0] % 2 == 0:
             new_image[center - image.shape[0] // 2: center + image.shape[0] // 2, :, :] = image
         else:
             new_image[center - image.shape[0] // 2 - 1: center + image.shape[0] // 2, :, :] = image
@@ -220,7 +220,7 @@ def Crop3DImage(image, shape):
     else:
         new_image = np.zeros((image.shape[0], shape[1], image.shape[2]))
         center = shape[1] // 2
-        if shape[1] % 2 ==0:
+        if image.shape[1] % 2 == 0:
             new_image[:, center - image.shape[1] // 2: center + image.shape[1] // 2, :] = image
         else:
             new_image[:, center - image.shape[1] // 2 - 1: center + image.shape[1] // 2, :] = image
@@ -235,10 +235,11 @@ def Crop3DImage(image, shape):
     else:
         new_image = np.zeros((image.shape[0], image.shape[1], shape[2]))
         center = shape[2] // 2
-        if image.shape[2] % 2 ==0:
+        if image.shape[2] % 2 == 0:
             new_image[:, :, center - image.shape[2] // 2: center + image.shape[2] // 2] = image
         else:
             new_image[:, :, center - image.shape[2] // 2 - 1: center + image.shape[2] // 2] = image
+
 
     return new_image
 
