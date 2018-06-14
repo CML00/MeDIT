@@ -8,7 +8,7 @@ from copy import deepcopy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 
-from Normalize import Normalize01
+from MeDIT.Normalize import Normalize01
 
 def SaveArrayAsImage(image, store_path, roi=0, dip=300):
     # image = Normalize01(image)
