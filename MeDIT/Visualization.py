@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.ndimage.morphology import binary_dilation
 import matplotlib.pyplot as plt
 import sys
+from scipy.ndimage import imread
+import os
 
 from MeDIT.Normalize import Normalize01
 
@@ -175,7 +177,7 @@ def FlattenAllSlices(data):
 ################################################################
 # 该函数将每个2d图像进行变换。
 def MergeImageWithROI(data, roi):
-    if data.ndim > 3:
+    if data.ndim >= 3:
         print("Should input 2d image")
         return data
 
@@ -206,3 +208,19 @@ def MergeImageWithROI(data, roi):
         new_data[index_x, index_y, 2] = np.max(data)
     return new_data
 
+def FusionImage(data, mask, is_show=False):
+    if data.ndim >= 3:
+        print("Should input 2d image")
+        return data
+
+    plt.imshow(data, cmap='gray')
+    plt.imshow(mask, cmap='hot', alpha=0.3)
+
+    if is_show:
+        plt.show()
+    else:
+        plt.axis('off')
+        plt.savefig('temp.jpg', dpi=300, format='jpeg', aspect='normal', bbox_inches='tight', pad_inches=0.0)
+        array = imread('temp.jpg')
+        os.remove('temp.jpg')
+        return array

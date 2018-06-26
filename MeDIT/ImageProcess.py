@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
-
+from scipy import ndimage
 
 def BluryEdgeOfROI(initial_ROI):
     '''
@@ -40,6 +40,17 @@ def FindBoundaryOfBinaryMask(mask):
     kernel = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
     boundary = binary_dilation(input=mask, structure=kernel, iterations=1) - mask
     return boundary
+
+def RemoveSmallRegion(mask, size_thres=50):
+    # seperate each connected ROI
+    label_im, nb_labels = ndimage.label(mask)
+
+    # remove small ROI
+    for i in range(1, nb_labels + 1):
+        if (label_im == i).sum() < size_thres:
+            # remove the small ROI in mask
+            mask[label_im == i] = 0
+    return mask
 
 ### Transfer index to position #######################################################################################
 def Index2XY(index, data_shape):

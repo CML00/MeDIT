@@ -5,7 +5,13 @@ import shutil
 import SimpleITK as sitk
 import numpy as np
 
+def GetImageFromArrayByImage(show_data, refer_image):
+    data = np.transpose(show_data, (2, 0, 1))
+    new_image = sitk.GetImageFromArray(data)
+    new_image.CopyInformation(refer_image)
+    return new_image
 
+################################################################################
 def GenerateFileName(file_path, name):
     store_path = ''
     if os.path.splitext(file_path)[1] == '.nii':
