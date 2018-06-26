@@ -209,18 +209,43 @@ def MergeImageWithROI(data, roi):
     return new_data
 
 def FusionImage(data, mask, is_show=False):
+    '''
+    To Fusion two 2D images.
+    :param data: The background
+    :param mask: The fore-ground
+    :param is_show: Boolen. If set to True, to show the result; else to return the fusion image. (RGB).
+    :return:
+    '''
     if data.ndim >= 3:
         print("Should input 2d image")
         return data
 
+    dpi = 96
+    x, y = data.shape
+    w = y / dpi
+    h = x / dpi
+
+    fig = plt.figure(frameon=False)
+    fig.set_size_inches(w, h)
+
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+
     plt.imshow(data, cmap='gray')
     plt.imshow(mask, cmap='hot', alpha=0.3)
+
+    fig.subplots_adjust(bottom=0)
+    fig.subplots_adjust(top=1)
+    fig.subplots_adjust(right=1)
+    fig.subplots_adjust(left=0)
 
     if is_show:
         plt.show()
     else:
         plt.axis('off')
-        plt.savefig('temp.jpg', dpi=300, format='jpeg', aspect='normal', bbox_inches='tight', pad_inches=0.0)
+        plt.savefig('temp.jpg', dpi=dpi, format='jpeg')
+        plt.show()
         array = imread('temp.jpg')
         os.remove('temp.jpg')
         return array
