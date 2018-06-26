@@ -2,6 +2,11 @@ import h5py
 import numpy as np
 
 def WeightsInfo(data_path):
+    '''
+    Load the h5file and print all the weights.
+    :param data_path: the path of the h5 file.
+    :return:
+    '''
     data_dict = h5py.File(data_path, 'r')
     for top_group_name in data_dict.keys():
         print(top_group_name)

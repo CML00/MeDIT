@@ -8,16 +8,22 @@ import sys
 from MeDIT.Normalize import Normalize01
 
 def DrawBoundaryOfBinaryMask(image, ROI):
+    '''
+    show the image with ROIs
+    :param image: the 2D image
+    :param ROI: the binary ROI with same size of the image
+    :return:
+    '''
     plt.imshow(image, cmap='Greys_r')
     plt.contour(ROI, colors='y')
     plt.show()
 
 def LoadWaitBar(total, progress):
     '''
-    runs = 300
-    for run_num in range(runs):
-        time.sleep(.1)
-        updt(runs, run_num + 1)
+    To show the waitbar for visulization
+    :param total: the number of the total step
+    :param progress: the number of the current processing
+    :return:
     '''
     barLength, status = 20, ""
     progress = float(progress) / float(total)

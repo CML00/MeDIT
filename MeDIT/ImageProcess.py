@@ -1,45 +1,99 @@
 import numpy as np
-from skimage.transform import AffineTransform, warp
-from scipy.ndimage.morphology import binary_dilation
-import copy
-import SimpleITK as sitk
-
-from MeDIT.Normalize import IntensityTransfer
+from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
 
-def FindBoundaryOfBinaryMask(image):
+def BluryEdgeOfROI(initial_ROI):
+    '''
+    This function blurry the ROI. This function can be used when the ROI was drawn not definitely.
+    :param initial_ROI: The binary ROI image, support 2D and 3D
+    :return:
+    '''
+    if len(np.shape(initial_ROI)) == 2:
+        kernel = np.ones((3, 3))
+    elif len(np.shape(initial_ROI)) == 3:
+        kernel = np.ones((3, 3, 3))
+    else:
+        print('Only could process 2D or 3D data')
+        return []
+
+    initial_ROI = initial_ROI == 1
+
+    ROI_dilate = binary_dilation(input=initial_ROI, structure=kernel, iterations=1)
+    ROI_erode = binary_erosion(input=ROI_dilate, structure=kernel, iterations=1)
+    ROI_erode1 = binary_erosion(input=ROI_erode, structure=kernel, iterations=1)
+    ROI_erode2 = binary_erosion(input=ROI_erode1, structure=kernel, iterations=1)
+
+    dif_dilate = (ROI_dilate - ROI_erode) * 0.25
+    dif_ori = (ROI_erode - ROI_erode1) * 0.5
+    dif_in = (ROI_erode1 - ROI_erode2) * 0.75
+
+    blurred_ROI = ROI_erode2 + dif_dilate + dif_ori + dif_in
+
+    return blurred_ROI
+
+def FindBoundaryOfBinaryMask(mask):
+    '''
+    Find the Boundary of the binary mask. Which was used based on the dilation process.
+    :param mask: the binary mask
+    :return:
+    '''
     kernel = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-    boundary = binary_dilation(input=image, structure=kernel, iterations=1) - image
+    boundary = binary_dilation(input=mask, structure=kernel, iterations=1) - mask
     return boundary
 
 ### Transfer index to position #######################################################################################
 def Index2XY(index, data_shape):
+    '''
+    Transfer the index to the x, y index based on the 2D image shape.
+    :param index: The index index
+    :param data_shape: The shape of the image.
+    :return: The list of the x, y index.
+    '''
     y = np.mod(index, data_shape[1])
     x = np.floor_divide(index, data_shape[1])
     return [x, y]
 
 def XY2Index(position, data_shape):
+    '''
+    Transfer the x, y position to the index if flatten the 2D image.
+    :param position: the point index with x and y
+    :param data_shape: The shape of the image
+    :return: the index of the flatted 1D vector.
+    '''
     return position[0] * data_shape[1] + position[1]
 
 def Index2XYZ(index, data_shape):
+    '''
+    Transfer the index to the x, y, z index based on the 3D image shape.
+    :param index: The index index
+    :param data_shape: The shape of the image.
+    :return: The list of the x, y, z index.
+    '''
     z = np.mod(index, data_shape[2])
     y = np.mod(np.floor_divide((index - z), data_shape[2]), data_shape[1])
     x = np.floor_divide(index, data_shape[2] * data_shape[1])
     return [x, y, z]
 
 def XYZ2Index(position, data_shape):
+    '''
+    Transfer the x, y, z position to the index if flatten the 3D image.
+    :param position: the point index with x and y
+    :param data_shape: The shape of the image
+    :return: the index of the flatted 1D vector.
+    '''
     return position[0] * (data_shape[1] * data_shape[2]) + position[1] * data_shape[2] + position[2]
 
 ### Extract Patch from the image #######################################################################################
-def ExtractPatches(image, patch_size, center_list):
-    patch_list = []
-    for center_point in center_list:
-        patch = CatchPatch(image, patch_size, center_point)
-        if patch != 0:
-            patch_list.append(patch)
-    return patch_list
-
 def ExtractPatch(image, patch_size, center_point=[-1, -1], is_shift=True):
+    '''
+    Extract patch from a 2D image.
+    :param image: the 2D numpy array
+    :param patch_size: the size of the 2D patch
+    :param center_point: the center position of the patch
+    :param is_shift: If the patch is too close to the edge of the image, is it allowed to shift the patch in order to
+    ensure that extracting the patch close to the edge. Default is True.
+    :return: the extracted patch.
+    '''
     patch_size = np.asarray(patch_size)
     if patch_size.shape == () or patch_size.shape == (1,):
         patch_size = np.array([patch_size[0], patch_size[0]])
@@ -88,6 +142,15 @@ def ExtractPatch(image, patch_size, center_point=[-1, -1], is_shift=True):
     return patch
 
 def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
+    '''
+    Extract patch from a 3D image.
+    :param image: the 3D numpy array
+    :param patch_size: the size of the 3D patch
+    :param center_point: the center position of the patch
+    :param is_shift: If the patch is too close to the edge of the image, is it allowed to shift the patch in order to
+    ensure that extracting the patch close to the edge. Default is True.
+    :return: the extracted patch.
+    '''
     if not isinstance(center_point, list):
         center_point = list(center_point)
     patch_size = np.asarray(patch_size)
@@ -162,6 +225,13 @@ def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
     return block
 
 def Crop2DImage(image, shape):
+    '''
+    Crop the size of the image. If the shape of the result is smaller than the image, the edges would be cut. If the size
+    of the result is larger than the image, the edge would be filled in 0.
+    :param image: the 2D numpy array
+    :param shape: the list of the shape.
+    :return: the cropped image.
+    '''
     if image.shape[0] >= shape[0]:
         center = image.shape[0] // 2
         if shape[0] % 2 == 0:
@@ -195,6 +265,13 @@ def Crop2DImage(image, shape):
     return new_image
 
 def Crop3DImage(image, shape):
+    '''
+    Crop the size of the image. If the shape of the result is smaller than the image, the edges would be cut. If the size
+    of the result is larger than the image, the edge would be filled in 0.
+    :param image: the 3D numpy array
+    :param shape: the list of the shape.
+    :return: the cropped image.
+    '''
     if image.shape[0] >= shape[0]:
         center = image.shape[0] // 2
         if shape[0] % 2 == 0:
