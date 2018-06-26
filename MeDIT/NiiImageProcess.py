@@ -179,12 +179,12 @@ def GetTransformByElastix(elastix_folder, fix_image_path, moving_image_path, out
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
 
-    cmd = os.path.join(elastix_folder, 'elastix') + r' -f ' + fix_image_path + r' -m ' + moving_image_path + r' -out ' + output_folder
+    cmd = os.path.join(elastix_folder, 'elastix') + r' -f "' + fix_image_path + r'" -m "' + moving_image_path + r'" -out "' + output_folder + '"'
     file_path_list = os.listdir(parameter_folder)
     file_path_list.sort()
     for file_path in file_path_list:
         abs_file_path = os.path.join(parameter_folder, file_path)
-        cmd += r' -p ' + abs_file_path
+        cmd += r' -p "' + abs_file_path + '"'
     os.system(cmd)
 
 def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
@@ -198,17 +198,18 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     '''
     file_name, suffex = os.path.splitext(moving_image_path)
 
-    temp_folder = os.path.join(case_folder, 'temp')
+
+    temp_folder = os.path.join(transform_folder, 'temp')
     os.mkdir(temp_folder)
     try:
-        cmd = os.path.join(elastix_folder, 'transformix') + r' -in ' + moving_image_path + r' -out ' + temp_folder
+        cmd = os.path.join(elastix_folder, 'transformix') + r' -in "' + moving_image_path + r'" -out "' + temp_folder + '"'
         candidate_transform_file_list = os.listdir(transform_folder)
         candidate_transform_file_list.sort()
         for file_path in candidate_transform_file_list:
             if len(file_path) > len('Transform'):
                 if 'Transform' in file_path:
                     abs_transform_path = os.path.join(transform_folder, file_path)
-                    cmd += r' -tp ' + abs_transform_path
+                    cmd += r' -tp "' + abs_transform_path + '"'
 
         os.system(cmd)
 
