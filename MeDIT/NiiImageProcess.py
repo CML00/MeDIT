@@ -43,10 +43,10 @@ def Dicom2Nii(data_folder, store_folder, store_format='.nii.gz'):
 
     n_files.sort()
 
-    # for file in n_files:
-    #     if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
-    #         print('The fold of {} should only contain dicom files.'.format(data_folder))
-    #         return None
+    for file in n_files:
+        if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
+            print('The fold of {} should only contain dicom files.'.format(data_folder))
+            return None
 
     header = pydicom.read_file(os.path.join(data_folder, n_files[0]))
     file_name = str(header.SeriesNumber).zfill(3) + '_' + header.SeriesDescription + store_format

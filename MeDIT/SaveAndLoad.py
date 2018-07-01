@@ -33,7 +33,7 @@ def SaveH5(store_path, data, tag, data_type=np.float32):
         data_type = [data_type]
 
     file = h5py.File(store_path, 'w')
-    for index in range(len(dat)):
+    for index in range(len(data)):
         file.create_dataset(tag[index], data=data[index], dtype=data_type[index])
     file.close()
 
