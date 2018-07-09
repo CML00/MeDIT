@@ -8,6 +8,7 @@ from scipy.ndimage import imread
 import os
 
 from MeDIT.Normalize import Normalize01
+from MeDIT.ImageProcess import Index2XY
 
 def DrawBoundaryOfBinaryMask(image, ROI):
     '''
@@ -163,14 +164,12 @@ def FlattenAllSlices(data):
         else:
             width += 1
     imshow_data = np.zeros((row * width, col * width))
-    from ImageProcess import Index2XY
-    slice_indexs =range(0, slice)
+    slice_indexs = range(0, slice)
     x, y = Index2XY(slice_indexs, (width, width))
 
     for x_index, y_index, slice_index in zip(x, y, slice_indexs):
         imshow_data[x_index * row : (x_index + 1) * row, y_index * row : (y_index + 1) * row] = data[..., slice_index]
 
-    from Normalize import Normalize01
     plt.imshow(Normalize01(imshow_data), cmap='gray')
     plt.show()
 
@@ -220,7 +219,7 @@ def FusionImage(data, mask, is_show=False):
         plt.show()
     else:
         plt.axis('off')
-        plt.savefig('temp.jpg', dpi=300, format='jpeg', aspect='normal', bbox_inches='tight', pad_inches=0.0)
+        plt.savefig('temp.jpg', format='jpeg', aspect='normal', bbox_inches='tight', pad_inches=0.0)
         array = imread('temp.jpg')
         os.remove('temp.jpg')
         return array
