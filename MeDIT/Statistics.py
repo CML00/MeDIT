@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import sem
 from sklearn.metrics import roc_auc_score
 from scipy import ndimage
-from MeDIT.ImageProcess import RemoveSmallRegion
+from MeDIT.ImageProcess import RemoveSmallRegion, XY2Index, XYZ2Index
 
 def AUC_Confidence_Interval(y_true, y_pred, CI_index=0.95):
     AUC = roc_auc_score(y_true, y_pred)
@@ -83,3 +83,27 @@ def StatisticDetection(prediction_map, label_map, threshold_value_on_overlap=0.5
             false_positive += 1
 
     return true_positive, false_positive, false_negative
+
+def StatsticOverlap(prediction_map, label_map):
+    image_shape = prediction_map.shape
+
+    if prediction_map.ndim == 2:
+        x_label, y_label = np.where(label_map > 0)
+        index_label = XY2Index([x_label, y_label], image_shape)
+
+        x_pred, y_pred = np.where(prediction_map > 0)
+        index_pred = XY2Index([x_pred, y_pred], image_shape)
+    elif prediction_map.ndim == 3:
+        x_label, y_label, z_label = np.where(label_map > 0)
+        index_label = XYZ2Index([x_label, y_label, z_label], image_shape)
+
+        x_pred, y_pred, z_pred = np.where(prediction_map > 0)
+        index_pred = XYZ2Index([x_pred, y_pred, z_pred], image_shape)
+
+    inter_index = np.intersect1d(index_label, index_pred)
+
+    true_positive_value = len(inter_index)
+    false_positive_value = len(index_pred) - len(inter_index)
+    false_negative_value = len(index_label) - len(inter_index)
+
+    return true_positive_value, false_positive_value, false_negative_value
