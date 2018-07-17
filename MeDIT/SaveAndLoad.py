@@ -108,6 +108,27 @@ def SaveDicomByRefer(data, dicom_data, store_path):
     ds.PixelData = data.tostring()
     ds.save_as(store_path)
 
+def SaveSiemens2DDicomSeries(array, dicom_folder, store_folder):
+    # Sort the array according the SliceLocation
+    dicom_file_list = os.listdir(dicom_folder)
+    dicom_file_list.sort()
+
+    slice_location_list = []
+    for dicom_file in dicom_file_list:
+        dicom_data = pydicom.dcmread(os.path.join(dicom_folder, dicom_file))
+        slice_location_list.append(float(dicom_data.SliceLocation))
+
+    sort_index_list = sorted(range(len(slice_location_list)), key=lambda k: slice_location_list[k])
+    sort_index_list = sorted(range(len(sort_index_list)), key=lambda k: sort_index_list[k])
+
+    for dicom_file, store_index in zip(dicom_file_list, range(len(dicom_file_list))):
+        dicom_data = pydicom.dcmread(os.path.join(dicom_folder, dicom_file))
+
+        ds = deepcopy(dicom_data)
+        ds.PixelData = array[..., sort_index_list[store_index]].tostring()
+        ds.save_as(os.path.join(store_folder, str(store_index) + '.dcm'))
+
+
 def GetDicomData(data_path):
     ds = pydicom.dcmread(data_path)
     data = ds.pixel_array
