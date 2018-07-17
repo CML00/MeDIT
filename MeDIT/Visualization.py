@@ -247,3 +247,34 @@ def FusionImage(data, mask, is_show=False):
         array = imread('temp.jpg')
         os.remove('temp.jpg')
         return array
+
+
+def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
+    if array.shape != roi.shape:
+        print('Array and ROI must have same shape')
+        return
+
+    array = Normalize01(array)
+    cmap = plt.get_cmap(color_map)
+    rgba_array = cmap(array)
+    rgb_array = np.delete(rgba_array, 3, 2)
+
+    print(array.shape)
+    print(rgb_array.shape)
+
+    index_roi_x, index_roi_y = np.where(roi == 0)
+    for index_x, index_y in zip(index_roi_x, index_roi_y):
+        rgb_array[index_x, index_y, :] = array[index_x, index_y]
+
+    plt.imshow(rgb_array)
+    plt.axis('off')
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    if store_path:
+        plt.savefig(store_path, format='tif', dpi=300, bbox_inches='tight', pad_inches=0)
+    if is_show:
+        plt.show()
+    plt.close()

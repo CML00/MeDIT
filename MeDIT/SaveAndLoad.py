@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from MeDIT.Normalize import Normalize01
 
-def SaveArrayAsImage(image, store_path, roi=0, dip=300):
+def SaveArrayAsGreyImage(image, store_path, roi=0, dip=300):
     # image = Normalize01(image)
     plt.imshow(image, cmap='Greys_r')
     if np.max(roi) != 0:
