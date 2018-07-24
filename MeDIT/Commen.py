@@ -1,5 +1,6 @@
 import SimpleITK as sitk
 import numpy as np
+import math
 
 def IsNumber(string):
     '''
@@ -22,4 +23,16 @@ def IsNumber(string):
 
     return False
 
+def IsValidNumber(string):
+    if not IsNumber(string):
+        return False
 
+    if math.isnan(float(string)):
+        return False
+
+    return True
+
+if __name__ == '__main__':
+    array = np.array([1, 'z', 2.5, 1e-4, np.nan, '3'])
+    for index in np.arange(array.size):
+        print(IsValidNumber(array[index]))
