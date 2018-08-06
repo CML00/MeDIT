@@ -88,6 +88,13 @@ def LoadNiiHeader(file_path, is_show_info=True):
 def SaveNiiImage(store_path, image):
     sitk.WriteImage(image, store_path)
 
+def SaveNumpyToImageByRef(store_path, data, ref_image):
+    data = np.swapaxes(data, 0, 1)
+    data = np.transpose(data)
+    image = sitk.GetImageFromArray(data)
+    image.CopyInformation(ref_image)
+    sitk.WriteImage(image, store_path)
+
 def GetDataFromSimpleITK(image, dtype=np.float16):
     data = np.asarray(sitk.GetArrayFromImage(image), dtype=dtype)
     data = np.transpose(data)
