@@ -1,333 +1,235 @@
+import dicom2nifti
+import pydicom
+import os
+import shutil
+import SimpleITK as sitk
 import numpy as np
-from scipy.ndimage.morphology import binary_dilation, binary_erosion
-from scipy import ndimage
 
-def BluryEdgeOfROI(initial_ROI):
-    '''
-    This function blurry the ROI. This function can be used when the ROI was drawn not definitely.
-    :param initial_ROI: The binary ROI image, support 2D and 3D
-    :return:
-    '''
-    if len(np.shape(initial_ROI)) == 2:
-        kernel = np.ones((3, 3))
-    elif len(np.shape(initial_ROI)) == 3:
-        kernel = np.ones((3, 3, 3))
-    else:
-        print('Only could process 2D or 3D data')
-        return []
-
-    initial_ROI = initial_ROI == 1
-
-    ROI_dilate = binary_dilation(input=initial_ROI, structure=kernel, iterations=1)
-    ROI_erode = binary_erosion(input=ROI_dilate, structure=kernel, iterations=1)
-    ROI_erode1 = binary_erosion(input=ROI_erode, structure=kernel, iterations=1)
-    ROI_erode2 = binary_erosion(input=ROI_erode1, structure=kernel, iterations=1)
-
-    dif_dilate = (ROI_dilate - ROI_erode) * 0.25
-    dif_ori = (ROI_erode - ROI_erode1) * 0.5
-    dif_in = (ROI_erode1 - ROI_erode2) * 0.75
-
-    blurred_ROI = ROI_erode2 + dif_dilate + dif_ori + dif_in
-
-    return blurred_ROI
-
-def FindBoundaryOfBinaryMask(mask):
-    '''
-    Find the Boundary of the binary mask. Which was used based on the dilation process.
-    :param mask: the binary mask
-    :return:
-    '''
-    kernel = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-    boundary = binary_dilation(input=mask, structure=kernel, iterations=1) - mask
-    return boundary
-
-def RemoveSmallRegion(mask, size_thres=50):
-    # seperate each connected ROI
-    label_im, nb_labels = ndimage.label(mask)
-
-    # remove small ROI
-    for i in range(1, nb_labels + 1):
-        if (label_im == i).sum() < size_thres:
-            # remove the small ROI in mask
-            mask[label_im == i] = 0
-    return mask
-
-### Transfer index to position #######################################################################################
-def Index2XY(index, data_shape):
-    '''
-    Transfer the index to the x, y index based on the 2D image shape.
-    :param index: The index index
-    :param data_shape: The shape of the image.
-    :return: The list of the x, y index.
-    '''
-    y = np.mod(index, data_shape[1])
-    x = np.floor_divide(index, data_shape[1])
-    return [x, y]
-
-def XY2Index(position, data_shape):
-    '''
-    Transfer the x, y position to the index if flatten the 2D image.
-    :param position: the point index with x and y
-    :param data_shape: The shape of the image
-    :return: the index of the flatted 1D vector.
-    '''
-    return position[0] * data_shape[1] + position[1]
-
-def Index2XYZ(index, data_shape):
-    '''
-    Transfer the index to the x, y, z index based on the 3D image shape.
-    :param index: The index index
-    :param data_shape: The shape of the image.
-    :return: The list of the x, y, z index.
-    '''
-    z = np.mod(index, data_shape[2])
-    y = np.mod(np.floor_divide((index - z), data_shape[2]), data_shape[1])
-    x = np.floor_divide(index, data_shape[2] * data_shape[1])
-    return [x, y, z]
-
-def XYZ2Index(position, data_shape):
-    '''
-    Transfer the x, y, z position to the index if flatten the 3D image.
-    :param position: the point index with x and y
-    :param data_shape: The shape of the image
-    :return: the index of the flatted 1D vector.
-    '''
-    return position[0] * (data_shape[1] * data_shape[2]) + position[1] * data_shape[2] + position[2]
-
-### Extract Patch from the image #######################################################################################
-def ExtractPatch(image, patch_size, center_point=[-1, -1], is_shift=True):
-    '''
-    Extract patch from a 2D image.
-    :param image: the 2D numpy array
-    :param patch_size: the size of the 2D patch
-    :param center_point: the center position of the patch
-    :param is_shift: If the patch is too close to the edge of the image, is it allowed to shift the patch in order to
-    ensure that extracting the patch close to the edge. Default is True.
-    :return: the extracted patch.
-    '''
-    patch_size = np.asarray(patch_size)
-    if patch_size.shape == () or patch_size.shape == (1,):
-        patch_size = np.array([patch_size[0], patch_size[0]])
-
-    image_row, image_col = np.shape(image)
-    catch_x_index = np.arange(patch_size[0] // 2, image_row - (patch_size[0] // 2))
-    catch_y_index = np.arange(patch_size[1] // 2, image_col - (patch_size[1] // 2))
-
-    if center_point == [-1, -1]:
-        center_point[0] = image_row // 2
-        center_point[1] = image_col // 2
-
-    if patch_size[0] > image_row or patch_size[1] > image_col:
-        print('The patch_size is larger than image shape')
-        return np.array([])
-
-    if center_point[0] < catch_x_index[0]:
-        if is_shift:
-            center_point[0] = catch_x_index[0]
-        else:
-            print('The center point is too close to the negative x-axis')
-            return []
-    if center_point[0] > catch_x_index[-1]:
-        if is_shift:
-            center_point[0] = catch_x_index[-1]
-        else:
-            print('The center point is too close to the positive x-axis')
-            return []
-    if center_point[1] < catch_y_index[0]:
-        if is_shift:
-            center_point[1] = catch_y_index[0]
-        else:
-            print('The center point is too close to the negative y-axis')
-            return []
-    if center_point[1] > catch_y_index[-1]:
-        if is_shift:
-            center_point[1] = catch_y_index[-1]
-        else:
-            print('The center point is too close to the positive y-axis')
-            return []
-
-    patch_row_index = [center_point[0] - patch_size[0] // 2, center_point[0] + patch_size[0] - patch_size[0] // 2]
-    patch_col_index = [center_point[1] - patch_size[1] // 2, center_point[1] + patch_size[1] - patch_size[1] // 2]
-
-    patch = image[patch_row_index[0]:patch_row_index[1], patch_col_index[0]:patch_col_index[1]]
-    return patch
-
-def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
-    '''
-    Extract patch from a 3D image.
-    :param image: the 3D numpy array
-    :param patch_size: the size of the 3D patch
-    :param center_point: the center position of the patch
-    :param is_shift: If the patch is too close to the edge of the image, is it allowed to shift the patch in order to
-    ensure that extracting the patch close to the edge. Default is True.
-    :return: the extracted patch.
-    '''
-    if not isinstance(center_point, list):
-        center_point = list(center_point)
-    patch_size = np.asarray(patch_size)
-    if patch_size.shape == () or patch_size.shape == (1,):
-        patch_size = np.array([patch_size[0], patch_size[0], patch_size[0]])
-
-    image_row, image_col, image_slice = np.shape(image)
-    catch_x_index = np.arange(patch_size[0] // 2, image_row - (patch_size[0] // 2))
-    catch_y_index = np.arange(patch_size[1] // 2, image_col - (patch_size[1] // 2))
-    if patch_size[2] == image_slice:
-        catch_z_index = [patch_size[2] // 2]
-    else:
-        catch_z_index = np.arange(patch_size[2] // 2, image_slice - (patch_size[2] // 2))
-
-    if center_point == [-1, -1, -1]:
-        center_point[0] = image_row // 2
-        center_point[1] = image_col // 2
-        center_point[2] = image_slice // 2
-
-    if patch_size[0] > image_row or patch_size[1] > image_col or patch_size[2] > image_slice:
-        print('The patch_size is larger than image shape')
-        return np.array()
-
-    if center_point[0] < catch_x_index[0]:
-        if is_shift:
-            center_point[0] = catch_x_index[0]
-        else:
-            print('The center point is too close to the negative x-axis')
-            return np.array()
-    if center_point[0] > catch_x_index[-1]:
-        if is_shift:
-            center_point[0] = catch_x_index[-1]
-        else:
-            print('The center point is too close to the positive x-axis')
-            return np.array()
-    if center_point[1] < catch_y_index[0]:
-        if is_shift:
-            center_point[1] = catch_y_index[0]
-        else:
-            print('The center point is too close to the negative y-axis')
-            return np.array()
-    if center_point[1] > catch_y_index[-1]:
-        if is_shift:
-            center_point[1] = catch_y_index[-1]
-        else:
-            print('The center point is too close to the positive y-axis')
-            return np.array()
-    if center_point[2] < catch_z_index[0]:
-        if is_shift:
-            center_point[2] = catch_z_index[0]
-        else:
-            print('The center point is too close to the negative z-axis')
-            return np.array()
-    if center_point[2] > catch_z_index[-1]:
-        if is_shift:
-            center_point[2] = catch_z_index[-1]
-        else:
-            print('The center point is too close to the positive z-axis')
-            return np.array()
-    #
-    # if np.shape(np.where(catch_x_index == center_point[0]))[1] == 0 or \
-    #     np.shape(np.where(catch_y_index == center_point[1]))[1] == 0 or \
-    #     np.shape(np.where(catch_z_index == center_point[2]))[1] == 0:
-    #     print('The center point is too close to the edge of the image')
-    #     return []
-
-    block_row_index = [center_point[0] - patch_size[0] // 2, center_point[0] + patch_size[0] - patch_size[0] // 2]
-    block_col_index = [center_point[1] - patch_size[1] // 2, center_point[1] + patch_size[1] - patch_size[1] // 2]
-    block_slice_index = [center_point[2] - patch_size[2] // 2, center_point[2] + patch_size[2] - patch_size[2] // 2]
-
-    block = image[block_row_index[0]:block_row_index[1], block_col_index[0]:block_col_index[1], block_slice_index[0]:block_slice_index[1]]
-    return block
-
-def Crop2DImage(image, shape):
-    '''
-    Crop the size of the image. If the shape of the result is smaller than the image, the edges would be cut. If the size
-    of the result is larger than the image, the edge would be filled in 0.
-    :param image: the 2D numpy array
-    :param shape: the list of the shape.
-    :return: the cropped image.
-    '''
-    if image.shape[0] >= shape[0]:
-        center = image.shape[0] // 2
-        if shape[0] % 2 == 0:
-            new_image = image[center - shape[0] // 2: center + shape[0] // 2, :]
-        else:
-            new_image = image[center - shape[0] // 2: center + shape[0] // 2 + 1, :]
-    else:
-        new_image = np.zeros((shape[0], image.shape[1]))
-        center = shape[0] // 2
-        if image.shape[0] % 2 ==0:
-            new_image[center - image.shape[0] // 2: center + image.shape[0] // 2, :] = image
-        else:
-            new_image[center - image.shape[0] // 2 - 1: center + image.shape[0] // 2, :] = image
-
-
-    image = new_image
-    if image.shape[1] >= shape[1]:
-        center = image.shape[1] // 2
-        if shape[1] % 2 == 0:
-            new_image = image[:, center - shape[1] // 2: center + shape[1] // 2]
-        else:
-            new_image = image[:, center - shape[1] // 2: center + shape[1] // 2 + 1]
-    else:
-        new_image = np.zeros((image.shape[0], shape[1]))
-        center = shape[1] // 2
-        if image.shape[1] % 2 ==0:
-            new_image[:, center - image.shape[1] // 2: center + image.shape[1] // 2] = image
-        else:
-            new_image[:, center - image.shape[1] // 2 - 1: center + image.shape[1] // 2] = image
-
+def GetImageFromArrayByImage(show_data, refer_image):
+    data = np.transpose(show_data, (2, 0, 1))
+    new_image = sitk.GetImageFromArray(data)
+    new_image.CopyInformation(refer_image)
     return new_image
 
-def Crop3DImage(image, shape):
+################################################################################
+def GenerateFileName(file_path, name):
+    store_path = ''
+    if os.path.splitext(file_path)[1] == '.nii':
+        store_path = file_path[:-4] + '_' + name + '.nii'
+    elif os.path.splitext(file_path)[1] == '.gz':
+        store_path = file_path[:-7] + '_' + name + '.nii.gz'
+    else:
+        print('the input file should be suffix .nii or .nii.gz')
+
+    return store_path
+
+def Dicom2Nii(data_folder, store_folder, store_format='.nii.gz'):
     '''
-    Crop the size of the image. If the shape of the result is smaller than the image, the edges would be cut. If the size
-    of the result is larger than the image, the edge would be filled in 0.
-    :param image: the 3D numpy array
-    :param shape: the list of the shape.
-    :return: the cropped image.
+    Convert Dicom data to Nifty
+
+    :param data_folder: The folder including all DICOM files. Each folder should only contain one serise.
+    :param store_folder: The folder that was used to store the nii file. The file name was generated to
+    "SeriesNumber + SeriesDescription + .nii.gz"
+    :param store_format: The format was used to store. Which should one of '.nii' or '.nii.gz' (default)
+
+    Apr-27-2018, Yang SONG [yang.song.91@foxmail.com]
     '''
-    if image.shape[0] >= shape[0]:
-        center = image.shape[0] // 2
-        if shape[0] % 2 == 0:
-            new_image = image[center - shape[0] // 2: center + shape[0] // 2, :, :]
-        else:
-            new_image = image[center - shape[0] // 2: center + shape[0] // 2 + 1, :, :]
-    else:
-        new_image = np.zeros((shape[0], image.shape[1], image.shape[2]))
-        center = shape[0] // 2
-        if image.shape[0] % 2 == 0:
-            new_image[center - image.shape[0] // 2: center + image.shape[0] // 2, :, :] = image
-        else:
-            new_image[center - image.shape[0] // 2 - 1: center + image.shape[0] // 2, :, :] = image
 
-    image = new_image
-    if image.shape[1] >= shape[1]:
-        center = image.shape[1] // 2
-        if image.shape[1] % 2 == 0:
-            new_image = image[:, center - shape[1] // 2: center + shape[1] // 2, :]
-        else:
-            new_image = image[:, center - shape[1] // 2: center + shape[1] // 2 + 1, :]
+    n_files = os.listdir(data_folder)
+    try:
+        assert(len(n_files) > 0)
+    except:
+        print("The folder should not be empty!")
 
-    else:
-        new_image = np.zeros((image.shape[0], shape[1], image.shape[2]))
-        center = shape[1] // 2
-        if image.shape[1] % 2 == 0:
-            new_image[:, center - image.shape[1] // 2: center + image.shape[1] // 2, :] = image
-        else:
-            new_image[:, center - image.shape[1] // 2 - 1: center + image.shape[1] // 2, :] = image
+    n_files.sort()
 
-    image = new_image
-    if image.shape[2] >= shape[2]:
-        center = image.shape[2] // 2
-        if shape[2] % 2 == 0:
-            new_image = image[:, :, center - shape[2] // 2: center + shape[2] // 2]
-        else:
-            new_image = image[:, :, center - shape[2] // 2: center + shape[2] // 2 + 1]
-    else:
-        new_image = np.zeros((image.shape[0], image.shape[1], shape[2]))
-        center = shape[2] // 2
-        if image.shape[2] % 2 == 0:
-            new_image[:, :, center - image.shape[2] // 2: center + image.shape[2] // 2] = image
-        else:
-            new_image[:, :, center - image.shape[2] // 2 - 1: center + image.shape[2] // 2] = image
+    for file in n_files:
+        if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
+            print('The fold of {} should only contain dicom files.'.format(data_folder))
+            return None
+
+    header = pydicom.read_file(os.path.join(data_folder, n_files[0]))
+    file_name = str(header.SeriesNumber).zfill(3) + '_' + header.SeriesDescription + store_format
+
+    file_name = file_name.replace(":", "_")
+    file_name = file_name.replace(" ", "_")
+
+    dicom2nifti.dicom_series_to_nifti(data_folder, os.path.join(store_folder, file_name), reorient_nifti=False)
+
+def CommenDicom2Nii(data_folder, store_folder):
+    temp_folder = os.path.join(data_folder, 'temp')
+    os.mkdir(temp_folder)
+
+    n_files = os.listdir(data_folder)
+    n_files.sort()
+
+    for file in n_files:
+        if os.path.splitext(file)[1] == '.dcm' or os.path.splitext(file)[1] == '.IMA':
+            shutil.move(os.path.join(data_folder, file), os.path.join(temp_folder, file))
+
+    Dicom2Nii(temp_folder, store_folder)
+
+    n_files = os.listdir(temp_folder)
+    n_files.sort()
+    for file in n_files:
+        shutil.move(os.path.join(temp_folder, file), os.path.join(data_folder, file))
+    shutil.rmtree(temp_folder)
+
+def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
+    file_list = os.listdir(source_folder)
+    file_list.sort()
+    for file in file_list:
+        file_path = os.path.join(source_folder, file)
+        store_file = os.path.join(store_folder, file+'.IMA')
+
+        cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
+        os.system(cmd)
+
+################################################################################
+def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
+    '''
+    Resize the SimpleITK image. One of the expected resolution/spacing and final shape should be given.
+
+    :param image: The SimpleITK image.
+    :param expected_resolution: The expected resolution.
+    :param excepted_shape: The expected final shape.
+    :return: The resized image.
+
+    Apr-27-2018, Yang SONG [yang.song.91@foxmail.com]
+    '''
+    if (expected_resolution == []) and (expected_shape == []):
+        print('Give at least one parameters. ')
+        return image
+
+    shape = image.GetSize()
+    resolution = image.GetSpacing()
+
+    if expected_resolution == []:
+        if expected_shape[0] == 0: expected_shape[0] = shape[0]
+        if expected_shape[1] == 0: expected_shape[1] = shape[1]
+        if expected_shape[2] == 0: expected_shape[2] = shape[2]
+        expected_resolution = [raw_resolution * raw_size / dest_size for dest_size, raw_size, raw_resolution in
+                               zip(expected_shape, shape, resolution)]
+    elif expected_shape == []:
+        if expected_resolution[0] == 0: expected_resolution[0] = resolution[0]
+        if expected_resolution[1] == 0: expected_resolution[1] = resolution[1]
+        if expected_resolution[2] == 0: expected_resolution[2] = resolution[2]
+        expected_shape = [int(raw_resolution * raw_size / dest_resolution) for
+                       dest_resolution, raw_size, raw_resolution in zip(expected_resolution, shape, resolution)]
+
+    output = sitk.Resample(image, expected_shape, sitk.AffineTransform(len(shape)), method, image.GetOrigin(),
+                           expected_resolution, image.GetDirection(), dtype)
+    return output
+
+def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
+    if not store_path:
+        store_path = GenerateFileName(file_path, 'Resize')
+
+    image = sitk.ReadImage(file_path)
+    resized_image = ResizeSipmleITKImage(image, expected_resolution, expected_shape, method=method, dtype=dtype)
+    sitk.WriteImage(resized_image, store_path)
+
+################################################################################
+def RegistrateImage(fixed_image, moving_image, interpolation_method=sitk.sitkBSpline):
+    '''
+    Registrate SimpleITK Imageby default parametes.
+
+    :param fixed_image: The reference
+    :param moving_image: The moving image.
+    :param interpolation_method: The method for interpolation. default is sitkBSpline
+    :return: The output image
+
+    Apr-27-2018, Jing ZHANG [798582238@qq.com],
+                 Yang SONG [yang.song.91@foxmail.com]
+    '''
+    if isinstance(fixed_image, str):
+        fixed_image = sitk.ReadImage(fixed_image)
+    if isinstance(moving_image, str):
+        moving_image = sitk.ReadImage(moving_image)
+
+    initial_transform = sitk.CenteredTransformInitializer(fixed_image,
+                                                          moving_image,
+                                                          sitk.Euler3DTransform(),
+                                                          sitk.CenteredTransformInitializerFilter.GEOMETRY)
+    registration_method = sitk.ImageRegistrationMethod()
+
+    # Similarity metric settings.
+    registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+    registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
+    registration_method.SetMetricSamplingPercentage(0.01)
+
+    registration_method.SetInterpolator(sitk.sitkLinear)
+
+    # Optimizer settings.
+    registration_method.SetOptimizerAsGradientDescent(learningRate=1.0, numberOfIterations=100,
+                                                      convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+    # Setup for the multi-resolution framework.
+    registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
+    registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2, 1, 0])
+    registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+    # Don't optimize in-place, we would possibly like to run this cell multiple times.
+    registration_method.SetInitialTransform(initial_transform, inPlace=False)
+    final_transform = registration_method.Execute(sitk.Cast(fixed_image, sitk.sitkFloat32),
+                                                  sitk.Cast(moving_image, sitk.sitkFloat32))
+    output_image = sitk.Resample(moving_image, fixed_image, final_transform, interpolation_method, 0.0,
+                                     moving_image.GetPixelID())
+    return output_image
+
+def RegistrateImageFile(fixed_image_path, moving_image_path, interpolation_method=sitk.sitkBSpline):
+    output_image = RegistrateImage(fixed_image_path, moving_image_path, interpolation_method)
+    store_path = GenerateFileName(moving_image_path, 'Reg')
+    sitk.WriteImage(output_image, store_path)
+
+def GetTransformByElastix(elastix_folder, fix_image_path, moving_image_path, output_folder, parameter_folder):
+    '''
+    Get registed transform by Elastix. This is depended on the Elastix.
+
+    :param elastix_folder: The folder path of the built elastix.
+    :param fix_image_path: The path of the fixed image.
+    :param moving_image_path: The path of the moving image.
+    :param output_folder: The folder of the output
+    :param parameter_folder: The folder path that store the parameter files.
+    :return:
+    '''
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+
+    cmd = os.path.join(elastix_folder, 'elastix') + r' -f "' + fix_image_path + r'" -m "' + moving_image_path + r'" -out "' + output_folder + '"'
+    file_path_list = os.listdir(parameter_folder)
+    file_path_list.sort()
+    for file_path in file_path_list:
+        abs_file_path = os.path.join(parameter_folder, file_path)
+        cmd += r' -p "' + abs_file_path + '"'
+    os.system(cmd)
+
+def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
+    '''
+    Registed Image by Elastix. This is depended on the Elastix.
+
+    :param elastix_folder: The folder path of the built Elastix
+    :param moving_image_path: The path of the moving image
+    :param transform_folder: The folder path of the generated by the elastix fucntion.
+    :return:
+    '''
+    file_name, suffex = os.path.splitext(moving_image_path)
 
 
-    return new_image
+    temp_folder = os.path.join(transform_folder, 'temp')
+    os.mkdir(temp_folder)
+    try:
+        cmd = os.path.join(elastix_folder, 'transformix') + r' -in "' + moving_image_path + r'" -out "' + temp_folder + '"'
+        candidate_transform_file_list = os.listdir(transform_folder)
+        candidate_transform_file_list.sort()
+        for file_path in candidate_transform_file_list:
+            if len(file_path) > len('Transform'):
+                if 'Transform' in file_path:
+                    abs_transform_path = os.path.join(transform_folder, file_path)
+                    cmd += r' -tp "' + abs_transform_path + '"'
 
+        os.system(cmd)
+
+        shutil.move(os.path.join(temp_folder, 'result.nii'), file_name + '_Reg' + suffex)
+        shutil.rmtree(temp_folder)
+    except:
+        shutil.rmtree(temp_folder)
