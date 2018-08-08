@@ -1,4 +1,5 @@
 import numpy as np
+from MeDIT.ImageProcess import XY2Index, XYZ2Index
 
 def Normalize(data):
     data = np.asarray(data)
@@ -51,7 +52,6 @@ def NormalizeForModality(data):
 
     return data
 
-
 def Normalize01(data):
 	new_data = np.asarray(data, dtype=np.float32)
 	if len(np.shape(new_data)) == 2 or len(np.shape(new_data)) == 1:
@@ -64,7 +64,6 @@ def Normalize01(data):
 			if np.max(new_data[:, :, slice_index]) > 0.001:
 				new_data[:, :, slice_index] = np.divide(new_data[:, :, slice_index], np.max(new_data[:, :, slice_index]))
 	return new_data
-	
 
 def IntensityTransfer(image, target_max, target_min, raw_min=-9999, raw_max=-9999):
 	assert(target_max >= target_min)
@@ -80,3 +79,37 @@ def IntensityTransfer(image, target_max, target_min, raw_min=-9999, raw_max=-999
 	image = image * target_intensity_range / raw_intensity_range
 	image = image - np.min(image) + target_min
 	return image
+
+def NormalizeByROI(data, roi):
+    if np.max(roi) > 0:
+        if len(np.where(roi == 1)) == 2:
+            x, y = np.where(roi == 1)
+            index = XY2Index([x, y], roi.shape)
+
+            vec = data.flatten()
+            vec = vec[index]
+
+            mean_value = np.mean(vec)
+            std_value = np.std(vec)
+
+            data -= mean_value
+            data /= std_value
+        elif len(np.where(roi == 1)) == 3:
+            x, y, z = np.where(roi == 1)
+            index = XYZ2Index([x, y, z], roi.shape)
+
+            vec = data.flatten()
+            vec = vec[index]
+
+            mean_value = np.mean(vec)
+            std_value = np.std(vec)
+
+            data -= mean_value
+            data /= std_value
+        else:
+            print('Only support 2D and 3D data.')
+    else:
+        data -= np.mean(data)
+        data /= np.std(data)
+
+    return data
