@@ -7,7 +7,7 @@ import numpy as np
 import scipy.ndimage.interpolation as ImgResize
 from skimage import morphology
 
-from Normalize import Normalize01
+from MeDIT.Normalize import Normalize01
 import matplotlib.pyplot as plt
 
 def SegmentLungAxialSlice(image, threshold_value=-374):

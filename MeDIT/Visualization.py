@@ -8,7 +8,7 @@ from scipy.ndimage import imread
 import os
 
 from MeDIT.Normalize import Normalize01
-from MeDIT.ImageProcess import Index2XY
+from MeDIT.ArrayProcess import Index2XY
 
 def DrawBoundaryOfBinaryMask(image, ROI):
     '''
