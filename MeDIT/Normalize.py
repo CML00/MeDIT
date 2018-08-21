@@ -1,5 +1,5 @@
 import numpy as np
-from MeDIT.ImageProcess import XY2Index, XYZ2Index
+from MeDIT.ArrayProcess import XY2Index, XYZ2Index
 
 def Normalize(data):
     data = np.asarray(data)

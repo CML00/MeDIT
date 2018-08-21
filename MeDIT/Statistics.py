@@ -2,7 +2,11 @@ import numpy as np
 from scipy.stats import sem
 from sklearn.metrics import roc_auc_score
 from scipy import ndimage
-from MeDIT.ImageProcess import RemoveSmallRegion, XY2Index, XYZ2Index
+from MeDIT.ArrayProcess import RemoveSmallRegion, XY2Index, XYZ2Index
+
+import os
+import glob
+from MeDIT.SaveAndLoad import LoadNiiData
 
 def AUC_Confidence_Interval(y_true, y_pred, CI_index=0.95):
     AUC = roc_auc_score(y_true, y_pred)
@@ -107,3 +111,132 @@ def StatsticOverlap(prediction_map, label_map):
     false_negative_value = len(index_label) - len(inter_index)
 
     return true_positive_value, false_positive_value, false_negative_value
+
+def NiiImageInfoStatistic(root_folder, key_word):
+    case_list = os.listdir(root_folder)
+    case_list.sort()
+
+    shape_list = []
+    spacing_list = []
+
+    for case in case_list:
+        case_folder = os.path.join(root_folder, case)
+        candidate_file = glob.glob(os.path.join(case_folder, key_word))
+        if len(candidate_file) != 1:
+            print('Not unique file: ', case)
+            continue
+
+        image, _, data = LoadNiiData(candidate_file[0])
+
+        shape_list.append(image.GetSize())
+        spacing_list.append(image.GetSpacing())
+
+    shape_info = np.array(shape_list)
+    spacing_info = np.array(spacing_list)
+
+    print('The number of cases is :', len(shape_list))
+    print('The mean of the size is :', np.mean(shape_info, axis=0))
+    print('The max of the size is :', np.max(shape_info, axis=0))
+    print('The min of the size is :', np.min(shape_info, axis=0))
+    print('The mean of the spacing is :', np.mean(spacing_info, axis=0))
+    print('The max of the spacing is :', np.max(spacing_info, axis=0))
+    print('The min of the spacing is :', np.min(spacing_info, axis=0))
+
+    import matplotlib.pyplot as plt
+    fig = plt.figure(0, [15, 5])
+    ax1 = fig.add_subplot(131)
+    ax1.hist(spacing_info[:, 0], bins=50)
+    ax1.set_xlabel('Resolution')
+    ax1.set_ylabel('Spacing/mm')
+    ax1.set_title('Histogram of x-axis spacing')
+    ax2 = fig.add_subplot(132)
+    ax2.hist(spacing_info[:, 1], bins=50)
+    ax2.set_xlabel('Resolution')
+    ax2.set_ylabel('Spacing/mm')
+    ax2.set_title('Histogram of y-axis spacing')
+    ax3 = fig.add_subplot(133)
+    ax3.hist(spacing_info[:, 2], bins=50)
+    ax3.set_xlabel('Resolution')
+    ax3.set_ylabel('Spacing/mm')
+    ax3.set_title('Histogram of z-axis spacing')
+    plt.show()
+
+def ROIImageInfoStatistic(root_folder, key_word):
+    case_list = os.listdir(root_folder)
+    case_list.sort()
+
+    shape_list = []
+    spacing_list = []
+    range_list = []
+
+    for case in case_list:
+        case_folder = os.path.join(root_folder, case)
+        candidate_file = glob.glob(os.path.join(case_folder, key_word))
+        if len(candidate_file) != 1:
+            print('Not unique file: ', case)
+            continue
+
+        image, _, data = LoadNiiData(candidate_file[0])
+
+        x, y, z = np.where(data == 1)
+        x_range = np.max(x) - np.min(x)
+        y_range = np.max(y) - np.min(y)
+        z_range = np.max(z) - np.min(z)
+
+        shape_list.append(image.GetSize())
+        spacing_list.append(image.GetSpacing())
+        range_list.append([x_range, y_range, z_range])
+
+    shape_info = np.array(shape_list)
+    spacing_info = np.array(spacing_list)
+    range_info = np.array(range_list)
+
+    print('The number of cases is :', len(shape_list))
+    print('The mean of the size is :', np.mean(shape_info, axis=0))
+    print('The max of the size is :', np.max(shape_info, axis=0))
+    print('The min of the size is :', np.min(shape_info, axis=0))
+    print('The mean of the spacing is :', np.mean(spacing_info, axis=0))
+    print('The max of the spacing is :', np.max(spacing_info, axis=0))
+    print('The min of the spacing is :', np.min(spacing_info, axis=0))
+    print('The mean of the range is :', np.mean(range_info, axis=0))
+    print('The max of the range is :', np.max(range_info, axis=0))
+    print('The min of the range is :', np.min(range_info, axis=0))
+
+
+    import matplotlib.pyplot as plt
+    fig = plt.figure(0, [15, 5])
+    ax1 = fig.add_subplot(131)
+    ax1.hist(spacing_info[:, 0], bins=50)
+    ax1.set_xlabel('Resolution')
+    ax1.set_ylabel('Spacing/mm')
+    ax1.set_title('Histogram of x-axis spacing')
+    ax2 = fig.add_subplot(132)
+    ax2.hist(spacing_info[:, 1], bins=50)
+    ax2.set_xlabel('Resolution')
+    ax2.set_ylabel('Spacing/mm')
+    ax2.set_title('Histogram of y-axis spacing')
+    ax3 = fig.add_subplot(133)
+    ax3.hist(spacing_info[:, 2], bins=50)
+    ax3.set_xlabel('Resolution')
+    ax3.set_ylabel('Spacing/mm')
+    ax3.set_title('Histogram of z-axis spacing')
+    plt.show()
+
+    import matplotlib.pyplot as plt
+    fig = plt.figure(0, [15, 5])
+    ax1 = fig.add_subplot(131)
+    ax1.hist(range_info[:, 0], bins=50)
+    ax1.set_xlabel('Resolution')
+    ax1.set_ylabel('Spacing/mm')
+    ax1.set_title('Histogram of x-axis spacing')
+    ax2 = fig.add_subplot(132)
+    ax2.hist(range_info[:, 1], bins=50)
+    ax2.set_xlabel('Resolution')
+    ax2.set_ylabel('Spacing/mm')
+    ax2.set_title('Histogram of y-axis spacing')
+    ax3 = fig.add_subplot(133)
+    ax3.hist(range_info[:, 2], bins=50)
+    ax3.set_xlabel('Resolution')
+    ax3.set_ylabel('Spacing/mm')
+    ax3.set_title('Histogram of z-axis spacing')
+    plt.show()

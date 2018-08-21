@@ -16,7 +16,7 @@ class ProstateSegmentation2D:
         self._selected_slice_index = None
         self._raw_data_shape = None
         self._selected_index = dict()
-        self.__image_preparer = ImagePrepare()
+        self._image_preparer = ImagePrepare()
 
     def __RemoveSmallRegion(self, mask, size_thres=2000):
         # seperate each connected ROI
@@ -67,23 +67,23 @@ class ProstateSegmentation2D:
         resolution = image.GetSpacing()
         _, data = GetDataFromSimpleITK(image, dtype=np.float32)
 
-        self.__image_preparer.LoadModelConfig(os.path.join(model_folder_path, 'config.ini'))
+        self._image_preparer.LoadModelConfig(os.path.join(model_folder_path, 'config.ini'))
 
         ''' 2) Select Data'''
 
-        data = self.__image_preparer.CropDataShape(data, resolution)
+        data = self._image_preparer.CropDataShape(data, resolution)
         data = self.TransDataFor2DModel(data)
         data = Normalize(data)
 
         preds = self._loaded_model.predict(data)
 
-        preds = preds[:, -np.prod(self.__image_preparer.GetShape()):, :]
+        preds = preds[:, -np.prod(self._image_preparer.GetShape()):, :]
         preds = np.reshape(preds, (
-        data.shape[0], self.__image_preparer.GetShape()[0], self.__image_preparer.GetShape()[1]))
+        data.shape[0], self._image_preparer.GetShape()[0], self._image_preparer.GetShape()[1]))
 
         # ct the ROI
         preds = self.invTransDataFor2DModel(preds)
-        preds = self.__image_preparer.RecoverDataShape(preds, resolution)
+        preds = self._image_preparer.RecoverDataShape(preds, resolution)
 
         mask = np.asarray(preds > 0.5, dtype=np.uint8)
         mask = self.__RemoveSmallRegion(mask, 200)
@@ -98,12 +98,12 @@ class ProstateSegmentation2D:
 
 
 def testSeg():
-    model_folder_path = r'c:\Users\SY\Desktop\model\StoreModel\ProstateSegmentation'
+    model_folder_path = r'C:\MyCode\MPApp\DPmodel\ProstateSegmentation'
     prostate_segmentor = ProstateSegmentation2D()
     prostate_segmentor.LoadModel(model_folder_path)
 
     from MeDIT.SaveAndLoad import LoadNiiData
-    image, _, show_data = LoadNiiData(r'c:\MyCode\MPApp\ProstateX-0004\005_t2_tse_tra.nii', dtype=np.float32, is_show_info=True)
+    image, _, show_data = LoadNiiData(r'C:\Users\SY\Desktop\1.2.156.14702.6.146.20150329000062\501_t2_tse_tra.nii', dtype=np.float32, is_show_info=True)
 
     predict_image, prodict_data = prostate_segmentor.Run(image, model_folder_path)
 

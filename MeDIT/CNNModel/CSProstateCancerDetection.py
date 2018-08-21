@@ -103,6 +103,9 @@ class CST2AdcDwiDetect():
                 center_x = (np.max(roi_index_x) + np.min(roi_index_x)) // 2
                 center_y = (np.max(roi_index_y) + np.min(roi_index_y)) // 2
 
+            if np.std(adc_slice) < 1e-4 or np.std(dwi_slice) < 1e-4:
+                continue
+
             t2_slice = self.__image_preparer.CropDataShape(t2_slice, resolution, [center_x, center_y])
             adc_slice = self.__image_preparer.CropDataShape(adc_slice, resolution, [center_x, center_y])
             dwi_slice = self.__image_preparer.CropDataShape(dwi_slice, resolution, [center_x, center_y])
@@ -140,7 +143,7 @@ class CST2AdcDwiDetect():
         return mask_image, mask
 
 def testDetect():
-    model_folder_path = r'c:\Users\SY\Desktop\model\StoreModel\CSPCaDetection'
+    model_folder_path = r'C:\MyCode\MPApp\DPmodel\CSPCaDetection'
     pca_detect = CST2AdcDwiDetect()
     pca_detect.LoadModel(model_folder_path)
 
