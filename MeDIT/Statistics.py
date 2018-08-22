@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import sem
+from scipy.stats import sem, ttest_ind
 from sklearn.metrics import roc_auc_score
 from scipy import ndimage
 from MeDIT.ArrayProcess import RemoveSmallRegion, XY2Index, XYZ2Index
@@ -7,6 +7,19 @@ from MeDIT.ArrayProcess import RemoveSmallRegion, XY2Index, XYZ2Index
 import os
 import glob
 from MeDIT.SaveAndLoad import LoadNiiData
+
+def ResampleBoost(array, times=1000):
+    n_bootstraps = times
+    rng_seed = 42  # control reproducibility
+    bootstrapped_scores = []
+
+    rng = np.random.RandomState(rng_seed)
+    for i in range(n_bootstraps):
+        indices = rng.random_integers(0, array.size - 1, array.size)
+        bootstrapped_scores.append(np.mean(array[indices]))
+
+    return np.array(bootstrapped_scores)
+
 
 def AUC_Confidence_Interval(y_true, y_pred, CI_index=0.95):
     AUC = roc_auc_score(y_true, y_pred)
@@ -40,6 +53,26 @@ def AUC_Confidence_Interval(y_true, y_pred, CI_index=0.95):
 
     print('AUC is {:.3f}, Confidence interval : [{:0.3f} - {:0.3}]'.format(AUC, confidence_lower, confidence_upper))
     return AUC, CI, sorted_scores
+
+def TTest(pred, label, is_show=True):
+    if np.unique(label).size != 2:
+        print('Only works on the binary classification.')
+        return
+
+    sample1 = pred[label == np.unique(label)[0]]
+    sample1_label = label[label == np.unique(label)[0]]
+    sample2 = pred[label == np.unique(label)[1]]
+    sample2_label = label[label == np.unique(label)[1]]
+
+    sample1_score = ResampleBoost(sample1)
+    sample2_score = ResampleBoost(sample2)
+
+    t, p = ttest_ind(sample1_score, sample2_score)
+    if is_show:
+        print("The t-statitics: ", t)
+        print("The p-value: ", p)
+
+    return t, p
 
 def StatisticDetection(prediction_map, label_map, threshold_value_on_overlap=0.5):
     '''
@@ -240,3 +273,9 @@ def ROIImageInfoStatistic(root_folder, key_word):
     ax3.set_ylabel('Spacing/mm')
     ax3.set_title('Histogram of z-axis spacing')
     plt.show()
+
+if __name__ == '__main__':
+    label = np.squeeze(np.asarray(np.load(r'C:\Users\SY\Desktop\label.npy'), dtype=np.uint8))
+    pred = np.squeeze(np.load(r'C:\Users\SY\Desktop\cnn_result.npy'))
+
+    print(TTest(pred, label))
