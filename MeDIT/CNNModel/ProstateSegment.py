@@ -29,6 +29,14 @@ class ProstateSegmentation2D:
                 mask[label_im == i] = 0
         return mask
 
+    def __KeepLargest(self, mask):
+        label_im, nb_labels = ndimage.label(mask)
+        max_volume = [(label_im == index).sum() for index in range(1, nb_labels + 1)]
+        index = np.argmax(max_volume)
+        new_mask = np.zeros(mask.shape)
+        new_mask[label_im == index + 1] = 1
+        return new_mask
+
     def LoadModel(self, fold_path):
 
         model_path = os.path.join(fold_path, 'model.yaml')
@@ -86,7 +94,7 @@ class ProstateSegmentation2D:
         preds = self._image_preparer.RecoverDataShape(preds, resolution)
 
         mask = np.asarray(preds > 0.5, dtype=np.uint8)
-        mask = self.__RemoveSmallRegion(mask, 200)
+        mask = self.__KeepLargest(mask)
 
         mask_image =  GetImageFromArray(mask, image)
         if store_folder:
