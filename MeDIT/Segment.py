@@ -109,6 +109,37 @@ def SegmentLung(data, threshold_value=-374, shrink=0, method=1):
                          col // 2 - crop_col // 2: col // 2 + crop_col // 2, slice] = crop_mask
     return mask
 
+def OtsuSegment(data):
+    max_value = np.max(data)
+    min_value = np.min(data)
+    step = (max_value - min_value) / 100
+
+    max_g = 0
+    threshold_value = 0
+    for threshold in np.arange(min_value, max_value, step):
+        bin_img = data > threshold
+        bin_img_inv = data <= threshold
+        fore_pix = np.sum(bin_img)
+        back_pix = np.sum(bin_img_inv)
+        if 0 == fore_pix:
+            break
+        if 0 == back_pix:
+            continue
+
+        w0 = float(fore_pix) / data.size
+        u0 = float(np.sum(data * bin_img)) / fore_pix
+        w1 = float(back_pix) / data.size
+        u1 = float(np.sum(data * bin_img_inv)) / back_pix
+        # intra-class variance
+        g = w0 * w1 * (u0 - u1) * (u0 - u1)
+        if g > max_g:
+            max_g = g
+            threshold_value = threshold
+
+    mask = np.zeros(data.shape, dtype=np.uint8)
+    mask[data > threshold_value] = 1
+
+    return threshold_value, mask
 
 if __name__ == '__main__':
     image = np.load(r'C:\MyCode\PythonScript\NoduleDetection\slice_demo.npy')

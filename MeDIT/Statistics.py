@@ -20,7 +20,6 @@ def ResampleBoost(array, times=1000):
 
     return np.array(bootstrapped_scores)
 
-
 def AUC_Confidence_Interval(y_true, y_pred, CI_index=0.95):
     AUC = roc_auc_score(y_true, y_pred)
 
@@ -144,6 +143,18 @@ def StatsticOverlap(prediction_map, label_map):
     false_negative_value = len(index_label) - len(inter_index)
 
     return true_positive_value, false_positive_value, false_negative_value
+
+def TopNAccuracy(array, label, n):
+    assert(array.shape[1] > n)
+    correct = []
+    for one_label, one_estimation in zip(label, np.argsort(array, axis=1)):
+        if one_label in one_estimation[-n:]:
+            correct.append(1)
+        else:
+            correct.append(0)
+
+    correct = np.array(correct)
+    return np.mean(correct)
 
 def NiiImageInfoStatistic(root_folder, key_word):
     case_list = os.listdir(root_folder)
