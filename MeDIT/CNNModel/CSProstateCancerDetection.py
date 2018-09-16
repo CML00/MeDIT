@@ -4,7 +4,7 @@ from configparser import ConfigParser
 import SimpleITK as sitk
 from keras.models import model_from_yaml
 
-from MeDIT.ImageProcess import ExtractPatch, XY2Index
+from MeDIT.ArrayProcess  import ExtractPatch, XY2Index
 from MeDIT.CNNModel.ImagePrepare import ImagePrepare
 from MeDIT.CNNModel.ProstateSegment import ProstateSegmentation2D
 from MeDIT.Normalize import NormalizeForModality, NormalizeByROI
