@@ -248,7 +248,6 @@ def FusionImage(data, mask, is_show=False):
         os.remove('temp.jpg')
         return array
 
-
 def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     if array.shape != roi.shape:
         print('Array and ROI must have same shape')
@@ -278,3 +277,4 @@ def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     if is_show:
         plt.show()
     plt.close()
+
