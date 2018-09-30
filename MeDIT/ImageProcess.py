@@ -214,9 +214,12 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     '''
     file_name, suffex = os.path.splitext(moving_image_path)
 
-
     temp_folder = os.path.join(transform_folder, 'temp')
-    os.mkdir(temp_folder)
+
+    try:
+        os.mkdir(temp_folder)
+    except:
+        pass
     try:
         cmd = os.path.join(elastix_folder, 'transformix') + r' -in "' + moving_image_path + r'" -out "' + temp_folder + '"'
         candidate_transform_file_list = os.listdir(transform_folder)

@@ -4,7 +4,7 @@ from configparser import ConfigParser
 import SimpleITK as sitk
 from keras.models import model_from_yaml
 
-from MeDIT.ArrayProcess  import ExtractPatch, XY2Index
+from MeDIT.ArrayProcess  import ExtractPatch, XY2Index, Crop2DImage
 from MeDIT.CNNModel.ImagePrepare import ImagePrepare
 from MeDIT.CNNModel.ProstateSegment import ProstateSegmentation2D
 from MeDIT.Normalize import NormalizeForModality, NormalizeByROI
@@ -126,7 +126,13 @@ class CST2AdcDwiDetect():
             pred_slice = np.squeeze(pred_slice)
             pred_slice = pred_slice[..., np.newaxis]
 
-            pred[..., slice_index] = np.squeeze(self.__image_preparer.RecoverDataShape(pred_slice, resolution))
+            pred_slice = np.squeeze(self.__image_preparer.RecoverDataShape(pred_slice, resolution))
+            # To process the extremely cases
+            final_shape = t2_image.GetSize()
+            final_shape = [final_shape[1], final_shape[0], final_shape[2]]
+            pred_slice = Crop2DImage(pred_slice, final_shape)
+
+            pred[..., slice_index] = np.squeeze(pred_slice)
 
         mask = np.asarray(pred > 0.5, dtype=np.uint8)
         mask = self.__RemoveSmallRegion(mask, 20)
@@ -135,9 +141,9 @@ class CST2AdcDwiDetect():
         pred_image = GetImageFromArray(pred, t2_image)
         if store_folder:
             if os.path.isdir(store_folder):
-                roi_output = os.path.join(store_folder, 'CS_PCa_ROI.nii')
+                roi_output = os.path.join(store_folder, 'CS_PCa_ROI.nii.gz')
                 SaveNiiImage(roi_output, mask_image)
-                pred_output = os.path.join(store_folder, 'CS_PCa_Pred.nii')
+                pred_output = os.path.join(store_folder, 'CS_PCa_Pred.nii.gz')
                 SaveNiiImage(pred_output, pred_image)
 
         return mask_image, mask

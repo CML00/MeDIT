@@ -9,6 +9,7 @@ from MeDIT.CNNModel.ImagePrepare import ImagePrepare
 from MeDIT.SaveAndLoad import GetDataFromSimpleITK
 from MeDIT.Normalize import Normalize
 from MeDIT.SaveAndLoad import GetImageFromArray, SaveNiiImage
+from MeDIT.ArrayProcess import Crop3DImage
 
 class ProstateSegmentation2D:
     def __init__(self):
@@ -95,6 +96,11 @@ class ProstateSegmentation2D:
 
         mask = np.asarray(preds > 0.5, dtype=np.uint8)
         mask = self.__KeepLargest(mask)
+
+        # To process the extremely cases
+        final_shape = image.GetSize()
+        final_shape = [final_shape[1], final_shape[0], final_shape[2]]
+        mask = Crop3DImage(mask, final_shape)
 
         mask_image =  GetImageFromArray(mask, image)
         if store_folder:
