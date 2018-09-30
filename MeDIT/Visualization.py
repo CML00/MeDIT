@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import sys
 from scipy.ndimage import imread
 import os
+from pyqtgraph.Qt import QtGui
+import pyqtgraph as pg
+
 
 from MeDIT.Normalize import Normalize01
 from MeDIT.ArrayProcess import Index2XY
@@ -207,6 +210,25 @@ def MergeImageWithROI(data, roi):
         new_data[index_x, index_y, 2] = np.max(data)
     return new_data
 
+def Merge3DImageWithROI(data, roi):
+    if not isinstance(roi, list):
+        roi = [roi]
+
+    if len(roi) > 3:
+        print('Only show 3 ROIs')
+        return data
+
+    new_data = np.zeros((data.shape[2], data.shape[0], data.shape[1], 3))
+    for slice_index in range(data.shape[2]):
+        slice = data[..., slice_index]
+        one_roi_list = []
+        for one_roi in roi:
+            one_roi_list.append(one_roi[..., slice_index])
+
+        new_data[slice_index, ...] = MergeImageWithROI(slice, one_roi_list)
+
+    return new_data
+
 def FusionImage(data, mask, is_show=False):
     '''
     To Fusion two 2D images.
@@ -277,4 +299,30 @@ def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     if is_show:
         plt.show()
     plt.close()
+
+def Imshow3DArray(data, ROI=None):
+    '''
+    Imshow 3D Array, the dimension is row x col x slice. If the ROI was combined in the data, the dimension is:
+    slice x row x col x color
+    :param data: 3D Array [row x col x slice] or 4D array [slice x row x col x RGB]
+    '''
+    if isinstance(ROI, list) or isinstance(ROI, type(data)):
+        data = Merge3DImageWithROI(data, ROI)
+
+    if np.ndim(data) == 3:
+        data = np.swapaxes(data, 0, 1)
+        data = np.transpose(data)
+
+    pg.setConfigOptions(imageAxisOrder='row-major')
+    app = QtGui.QApplication([])
+
+    win = QtGui.QMainWindow()
+    win.resize(800, 800)
+    imv = pg.ImageView()
+    win.setCentralWidget(imv)
+    win.show()
+    win.setWindowTitle('Imshow3D')
+
+    imv.setImage(data)
+    app.exec_()
 
