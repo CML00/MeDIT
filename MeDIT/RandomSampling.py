@@ -27,8 +27,7 @@ def Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_ra
     pdf_array = 1 / np.sqrt(2 * np.pi * sigma * sigma) * np.exp(-1 * x * x / (2 * sigma * sigma))
     sample_value = [np.sum(pdf_array[:index]) for index in range(pdf_array.shape[0])]
 
-    # print(sample_value)
-    # print(random_sample_index)
+    pdf = deepcopy(pdf_array)
     pdf_list = pdf_array.tolist()
 
     for index in range(random_sample_number):
@@ -62,7 +61,7 @@ def Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_ra
         sample_index = np.asarray(sample_order, dtype=np.uint16)
         temp_image[sample_index, :] = 255
 
-    return sample_order
+    return pdf, sample_order
 
 def Save2DSamplingStategyAsGIF(sampling_order, store_path, image_shape=[], sample_axis=0):
     if image_shape == []:
@@ -106,8 +105,4 @@ def GenSamplingMask(image_shape, sampling_percentage, center_sampling_rate, samp
         mask[:, sample_order] = 1
 
     return mask
-#
-mask = GenSamplingMask(10, 0.35, 0.2, 1)
-import matplotlib.pyplot as plt
-plt.imshow(mask, cmap='gray')
-plt.show()
+

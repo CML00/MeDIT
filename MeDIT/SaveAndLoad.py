@@ -54,6 +54,7 @@ def LoadNiiData(file_path, dtype=np.float32, is_show_info=False):
         print('Image size is: ', image.GetSize())
         print('Image resolution is: ', image.GetSpacing())
         print('Image direction is: ', image.GetDirection())
+        print('Image Origion is: ', image.GetOrigin())
 
     return image, data, show_data
 
