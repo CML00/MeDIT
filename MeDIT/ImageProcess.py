@@ -5,6 +5,8 @@ import shutil
 import SimpleITK as sitk
 import numpy as np
 
+from MeDIT.SaveAndLoad import GetDataFromSimpleITK
+
 def GetImageFromArrayByImage(show_data, refer_image):
     data = np.transpose(show_data, (2, 0, 1))
     new_image = sitk.GetImageFromArray(data)
@@ -43,10 +45,10 @@ def Dicom2Nii(data_folder, store_folder, store_format='.nii.gz'):
 
     n_files.sort()
 
-    for file in n_files:
-        if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
-            print('The fold of {} should only contain dicom files.'.format(data_folder))
-            return None
+    # for file in n_files:
+    #     if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
+    #         print('The fold of {} should only contain dicom files.'.format(data_folder))
+    #         return None
 
     header = pydicom.read_file(os.path.join(data_folder, n_files[0]))
     file_name = str(header.SeriesNumber).zfill(3) + '_' + header.SeriesDescription + store_format
@@ -236,3 +238,23 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
         shutil.rmtree(temp_folder)
     except:
         shutil.rmtree(temp_folder)
+
+################################################################################
+# def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):
+#     if isinstance(adc_image, str):
+#         adc_image = sitk.ReadImage(adc_image)
+#     if isinstance(low_b_value_image, str):
+#         low_b_value_image = sitk.ReadImage(low_b_value_image)
+#
+#     ref_image = sitk.ReadImage(ref)
+#
+#     adc_array = GetDataFromSimpleITK(adc_image, dtype=np.float32)[1]
+#     low_b_value_array = GetDataFromSimpleITK(low_b_value_image, dtype=np.float32)[1]
+#     ref_array = GetDataFromSimpleITK(ref_image, dtype=np.float32)[1]
+#     target_b_value_array = low_b_value_array * np.exp(-1 * adc_array / 4097. / 256. * float((target_b_value - low_b_value)))
+#
+#     from MeDIT.Visualization import Imshow3D
+#     from MeDIT.Normalize import Normalize01
+#     Imshow3D(np.concatenate((Normalize01(adc_array), Normalize01(low_b_value_array),
+#                              Normalize01(target_b_value_array), Normalize01(ref_array)), axis=1))
+
