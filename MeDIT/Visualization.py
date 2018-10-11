@@ -296,9 +296,9 @@ def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
     if store_path:
         plt.savefig(store_path, format='tif', dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close()
     if is_show:
         plt.show()
-    plt.close()
 
 def Imshow3DArray(data, ROI=None):
     '''

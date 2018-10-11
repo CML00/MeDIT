@@ -6,7 +6,7 @@ from cryptography.hazmat import backends
 from cryptography.hazmat.primitives import serialization
 
 from truepy import LicenseData, License
-from MeDIT.Commen import GetPhysicaladdress
+from MeDIT.Others import GetPhysicaladdress
 
 class MyLicense:
     def __init__(self, ssl_path=r'C:\MyProgram\Git\usr\bin\openssl.exe'):

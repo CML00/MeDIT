@@ -1,7 +1,7 @@
 import numpy as np
 from MeDIT.ArrayProcess import XY2Index, XYZ2Index
 
-def Normalize(data):
+def NormalizeForTensorflow(data):
     data = np.asarray(data)
     if len(np.shape(data)) == 4:
         dim = 2
