@@ -2,6 +2,14 @@ import numpy as np
 import imageio
 from copy import deepcopy
 
+# import pics.proximal_func as pf
+import pics.CS_MRI_solvers_func as solvers
+import pics.operators_class as opts
+import utilities.utilities_func as ut
+
+# from espirit.espirit_func import espirit_2d, espirit_3d
+import scipy.io as sio
+
 
 def Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_rate):
     temp_image = np.zeros((phase_encoding_number, phase_encoding_number))
@@ -106,3 +114,46 @@ def GenSamplingMask(image_shape, sampling_percentage, center_sampling_rate, samp
 
     return mask
 
+def ReconstructADMM_2D(fullysampled_kdata, mask, is_show=True):
+    fullysampled_kdata = fullysampled_kdata[..., np.newaxis]
+    FTm = opts.FFTW2d_kmask(mask)
+
+    esp = opts.espirit(sensitivity=np.ones_like(fullysampled_kdata))
+    Aopt = opts.joint2operators(esp, FTm)
+
+    im = FTm.backward(fullysampled_kdata)
+    dwt = opts.DWT2d(wavelet='haar', level=4)
+
+    # undersampling in k-space
+    b = FTm.forward(im)
+    scaling = ut.optscaling(FTm, b)
+    b = b / scaling
+
+    # do cs mri recon
+    Nite = 10  # number of iterations
+    step = 0.05  # step size
+    tv_r = 0.005  # regularization term for tv term
+    rho = 1.0
+    th = 1  # threshold
+
+    # xopt = solvers.IST_2(FTm.forward,FTm.backward,b, Nite, step,th) #soft thresholding
+    xopt = solvers.ADMM_l2Afxnb_tvx(Aopt.forward, Aopt.backward, b, Nite, step, tv_r, rho, is_show=is_show)
+    # xopt = solvers.ADMM_l2Afxnb_l1x_2( FTm.forward, FTm.backward, b, Nite, step, 100, 1 )
+
+    # ut.plotim3(np.absolute(xopt))
+    return xopt
+
+def test_recon():
+    from MeDIT.SaveAndLoad import LoadH5
+    image = np.load(r'z:\Data\MIDAS-recon\resultfolder\fullysampled_image.npy')
+    mask = LoadH5(r'z:\Data\MIDAS-recon\CNN\mask.h5', 'mask', data_type=np.uint8)
+
+    import matplotlib.pyplot as plt
+    plt.imshow(np.real(np.squeeze(image)), cmap='gray')
+    plt.show()
+
+    kdata = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(image)))
+    recon = ReconstructADMM_2D(kdata, mask)
+
+    plt.imshow(np.real(np.squeeze(recon)), cmap='gray')
+    plt.show()
