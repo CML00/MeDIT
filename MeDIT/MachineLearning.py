@@ -16,8 +16,14 @@ def SeparateCases(root_folder, store_folder, testing_percentage=0.3):
         os.mkdir(testing_store_folder)
 
     for case in case_list[:spe_index]:
-        shutil.copytree(os.path.join(root_folder, case), os.path.join(testing_store_folder, case))
+        try:
+            shutil.copytree(os.path.join(root_folder, case), os.path.join(testing_store_folder, case))
+        except:
+            shutil.copyfile(os.path.join(root_folder, case), os.path.join(testing_store_folder, case))
 
     for case in case_list[spe_index:]:
-        shutil.copytree(os.path.join(root_folder, case), os.path.join(training_store_folder, case))
+        try:
+            shutil.copytree(os.path.join(root_folder, case), os.path.join(training_store_folder, case))
+        except:
+            shutil.copyfile(os.path.join(root_folder, case), os.path.join(training_store_folder, case))
 
