@@ -96,7 +96,7 @@ def GenSamplingMask(image_shape, sampling_percentage, center_sampling_rate, samp
         print('Give correct sample_axis')
         return mask
 
-    order = Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_rate)
+    _, order = Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_rate)
     sample_order = np.asarray(order[:round(len(order) * sampling_percentage)], dtype=np.uint16)
 
     if sample_axis == 0:
@@ -105,4 +105,10 @@ def GenSamplingMask(image_shape, sampling_percentage, center_sampling_rate, samp
         mask[:, sample_order] = 1
 
     return mask
+
+def GetUnderSampledImage(image, mask):
+    kdata = np.fft.fftshift(np.fft.fft2(image))
+    under_sampled_kdata = kdata * mask
+    under_dampled_image = np.fft.ifft2(np.fft.ifftshift(under_sampled_kdata))
+    return under_dampled_image
 
