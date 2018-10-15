@@ -8,11 +8,13 @@ from copy import deepcopy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 
+from MeDIT.ImageProcess import GetImageFromArrayByImage
+
 from MeDIT.Normalize import Normalize01
 
-def SaveArrayAsGreyImage(image, store_path, roi=0, dip=300):
+def SaveArrayAsGreyImage(array, store_path, roi=0, dip=300):
     # image = Normalize01(image)
-    plt.imshow(image, cmap='Greys_r')
+    plt.imshow(array, cmap='Greys_r')
     if np.max(roi) != 0:
         plt.contour(roi, colors='g')
     plt.axis('off')
@@ -21,7 +23,7 @@ def SaveArrayAsGreyImage(image, store_path, roi=0, dip=300):
     plt.margins(0, 0)
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
-    plt.savefig(store_path, format='tif', dpi=300, bbox_inches='tight', pad_inches = 0)
+    plt.savefig(store_path, format='tif', dpi=dip, bbox_inches='tight', pad_inches=0)
     plt.close()
 
 def SaveH5(store_path, data, tag, data_type=np.float32):
@@ -30,7 +32,7 @@ def SaveH5(store_path, data, tag, data_type=np.float32):
     if not isinstance(tag, list):
         tag = [tag]
     if not isinstance(data_type, list):
-        data_type = [data_type]
+        data_type = [data_type for index in range(len(data))]
 
     file = h5py.File(store_path, 'w')
     for index in range(len(data)):
@@ -43,12 +45,26 @@ def LoadH5(data_path, tag, data_type=np.float32):
     file.close()
     return data
 
+def LoadH5Info(data_path):
+    '''
+    Load the h5file and print all the weights.
+    :param data_path: the path of the h5 file.
+    :return:
+    '''
+    data_dict = h5py.File(data_path, 'r')
+    for top_group_name in data_dict.keys():
+        print(top_group_name)
+        for group_name in data_dict[top_group_name].keys():
+            print('    ' + group_name)
+            for data_name in data_dict[top_group_name][group_name].keys():
+                print('        ' + data_name + ': ' + str(np.shape(data_dict[top_group_name][group_name][data_name].value)))
+
 def LoadNiiData(file_path, dtype=np.float32, is_show_info=False):
     image = sitk.ReadImage(file_path)
     data = np.asarray(sitk.GetArrayFromImage(image), dtype=dtype)
 
-    data = np.transpose(data)
-    show_data = np.swapaxes(data, 0, 1)
+    show_data = np.transpose(data)
+    show_data = np.swapaxes(show_data, 0, 1)
 
     if is_show_info:
         print('Image size is: ', image.GetSize())
@@ -89,26 +105,10 @@ def LoadNiiHeader(file_path, is_show_info=True):
 def SaveNiiImage(store_path, image):
     sitk.WriteImage(image, store_path)
 
-def GetImageFromArray(data, ref_image):
-    data = np.swapaxes(data, 0, 1)
-    data = np.transpose(data)
-    image = sitk.GetImageFromArray(data)
-    image.CopyInformation(ref_image)
-    return image
-
 def SaveNumpyToImageByRef(store_path, data, ref_image):
-    data = np.swapaxes(data, 0, 1)
-    data = np.transpose(data)
-    image = sitk.GetImageFromArray(data)
+    image = GetImageFromArrayByImage(data, ref_image)
     image.CopyInformation(ref_image)
     sitk.WriteImage(image, store_path)
-
-def GetDataFromSimpleITK(image, dtype=np.float32):
-    data = np.asarray(sitk.GetArrayFromImage(image), dtype=dtype)
-    data = np.transpose(data)
-    show_data = np.swapaxes(data, 0, 1)
-
-    return data, show_data
 
 def SaveDicomByRefer(data, dicom_data, store_path):
     if isinstance(dicom_data, str) and dicom_data[-3:] == 'dcm':
@@ -157,6 +157,7 @@ def SaveAsGif(image_list, store_path, duration=1):
     imageio.mimsave(store_path, gif, duration=duration)
 
 def LoadROI(file_path):
+    # Load ImageJ saved format
     suffix = os.path.splitext(file_path)[1]
     if suffix == 'roi':
         return read_roi_file(file_path)

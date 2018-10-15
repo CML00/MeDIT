@@ -5,15 +5,19 @@ import shutil
 import SimpleITK as sitk
 import numpy as np
 
-from MeDIT.SaveAndLoad import GetDataFromSimpleITK
-
 def GetImageFromArrayByImage(show_data, refer_image):
     data = np.transpose(show_data, (2, 0, 1))
     new_image = sitk.GetImageFromArray(data)
     new_image.CopyInformation(refer_image)
     return new_image
 
-################################################################################
+def GetDataFromSimpleITK(image, dtype=np.float32):
+    data = np.asarray(sitk.GetArrayFromImage(image), dtype=dtype)
+    show_data = np.transpose(data)
+    show_data = np.swapaxes(show_data , 0, 1)
+
+    return data, show_data
+
 def GenerateFileName(file_path, name):
     store_path = ''
     if os.path.splitext(file_path)[1] == '.nii':
@@ -25,63 +29,11 @@ def GenerateFileName(file_path, name):
 
     return store_path
 
-def Dicom2Nii(data_folder, store_folder, store_format='.nii.gz'):
-    '''
-    Convert Dicom data to Nifty
-
-    :param data_folder: The folder including all DICOM files. Each folder should only contain one serise.
-    :param store_folder: The folder that was used to store the nii file. The file name was generated to
-    "SeriesNumber + SeriesDescription + .nii.gz"
-    :param store_format: The format was used to store. Which should one of '.nii' or '.nii.gz' (default)
-
-    Apr-27-2018, Yang SONG [yang.song.91@foxmail.com]
-    '''
-
-    n_files = os.listdir(data_folder)
-    try:
-        assert(len(n_files) > 0)
-    except:
-        print("The folder should not be empty!")
-
-    n_files.sort()
-
-    # for file in n_files:
-    #     if os.path.splitext(file)[1] != '.dcm' and os.path.splitext(file)[1] != '.IMA':
-    #         print('The fold of {} should only contain dicom files.'.format(data_folder))
-    #         return None
-
-    header = pydicom.read_file(os.path.join(data_folder, n_files[0]))
-    file_name = str(header.SeriesNumber).zfill(3) + '_' + header.SeriesDescription + store_format
-
-    file_name = file_name.replace(":", "_")
-    file_name = file_name.replace(" ", "_")
-
-    dicom2nifti.dicom_series_to_nifti(data_folder, os.path.join(store_folder, file_name), reorient_nifti=False)
-
-def CommenDicom2Nii(data_folder, store_folder):
-    temp_folder = os.path.join(data_folder, 'temp')
-    os.mkdir(temp_folder)
-
-    n_files = os.listdir(data_folder)
-    n_files.sort()
-
-    for file in n_files:
-        if os.path.splitext(file)[1] == '.dcm' or os.path.splitext(file)[1] == '.IMA':
-            shutil.move(os.path.join(data_folder, file), os.path.join(temp_folder, file))
-
-    Dicom2Nii(temp_folder, store_folder)
-
-    n_files = os.listdir(temp_folder)
-    n_files.sort()
-    for file in n_files:
-        shutil.move(os.path.join(temp_folder, file), os.path.join(data_folder, file))
-    shutil.rmtree(temp_folder)
-
 def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
-    file_list = os.listdir(source_folder)
+    file_list = os.listdir(data_folder)
     file_list.sort()
     for file in file_list:
-        file_path = os.path.join(source_folder, file)
+        file_path = os.path.join(data_folder, file)
         store_file = os.path.join(store_folder, file+'.IMA')
 
         cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
@@ -178,7 +130,7 @@ def RegistrateImage(fixed_image, moving_image, interpolation_method=sitk.sitkBSp
                                      moving_image.GetPixelID())
     return output_image
 
-def RegistrateImageFile(fixed_image_path, moving_image_path, interpolation_method=sitk.sitkBSpline):
+def RegistrateNiiFile(fixed_image_path, moving_image_path, interpolation_method=sitk.sitkBSpline):
     output_image = RegistrateImage(fixed_image_path, moving_image_path, interpolation_method)
     store_path = GenerateFileName(moving_image_path, 'Reg')
     sitk.WriteImage(output_image, store_path)

@@ -56,10 +56,15 @@ def RemoveSmallRegion(mask, size_thres=50):
 def Index2XY(index, data_shape):
     '''
     Transfer the index to the x, y index based on the 2D image shape.
-    :param index: The index index
+    :param index: The index list
     :param data_shape: The shape of the image.
     :return: The list of the x, y index.
     '''
+
+    if np.max(index) >= data_shape[0] * data_shape[1]:
+        print('The index is out of the range.')
+        return []
+
     y = np.mod(index, data_shape[1])
     x = np.floor_divide(index, data_shape[1])
     return [x, y]
@@ -80,6 +85,10 @@ def Index2XYZ(index, data_shape):
     :param data_shape: The shape of the image.
     :return: The list of the x, y, z index.
     '''
+    if np.max(index) >= data_shape[0] * data_shape[1] * data_shape[2]:
+        print('The index is out of the range.')
+        return []
+
     z = np.mod(index, data_shape[2])
     y = np.mod(np.floor_divide((index - z), data_shape[2]), data_shape[1])
     x = np.floor_divide(index, data_shape[2] * data_shape[1])
