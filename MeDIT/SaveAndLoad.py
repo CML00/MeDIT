@@ -59,12 +59,21 @@ def LoadH5Info(data_path):
             for data_name in data_dict[top_group_name][group_name].keys():
                 print('        ' + data_name + ': ' + str(np.shape(data_dict[top_group_name][group_name][data_name].value)))
 
-def LoadNiiData(file_path, dtype=np.float32, is_show_info=False):
+def LoadNiiData(file_path, dtype=np.float32, is_show_info=False, is_flip=True):
     image = sitk.ReadImage(file_path)
     data = np.asarray(sitk.GetArrayFromImage(image), dtype=dtype)
 
     show_data = np.transpose(data)
     show_data = np.swapaxes(show_data, 0, 1)
+
+    # To process the flip cases
+    if is_flip:
+        direction = image.GetDirection()
+        for direct_index in range(3):
+            direct_vector = [direction[0 + direct_index * 3], direction[1 + direct_index * 3], direction[2 + direct_index * 3]]
+            abs_max_point = np.argmax(np.abs(direct_vector))
+            if direct_vector[abs_max_point] < 0:
+                show_data = np.flip(show_data, axis=direct_index)
 
     if is_show_info:
         print('Image size is: ', image.GetSize())
