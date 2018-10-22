@@ -6,10 +6,11 @@ from scipy import ndimage
 from keras.models import model_from_yaml
 
 from MeDIT.CNNModel.ImagePrepare import ImagePrepare
-from MeDIT.SaveAndLoad import GetDataFromSimpleITK
-from MeDIT.Normalize import Normalize
-from MeDIT.SaveAndLoad import GetImageFromArray, SaveNiiImage
+from MeDIT.ImageProcess import GetDataFromSimpleITK, GetImageFromArrayByImage
+from MeDIT.Normalize import NormalizeForTensorflow
+from MeDIT.SaveAndLoad import SaveNiiImage
 from MeDIT.ArrayProcess import Crop3DImage
+from MeDIT.DataAugmentor import DataAugmentor3D
 
 class ProstateSegmentation2D:
     def __init__(self):
@@ -72,7 +73,7 @@ class ProstateSegmentation2D:
         preds = preds.swapaxes(1, 2).swapaxes(0, 2)
         return preds
 
-    def Run(self, image, model_folder_path, store_folder=''):
+    def Run(self, image, model_folder_path, store_folder='', is_return_all_data=False):
         resolution = image.GetSpacing()
         _, data = GetDataFromSimpleITK(image, dtype=np.float32)
 
@@ -82,9 +83,38 @@ class ProstateSegmentation2D:
 
         data = self._image_preparer.CropDataShape(data, resolution)
         data = self.TransDataFor2DModel(data)
-        data = Normalize(data)
+        data = NormalizeForTensorflow(data)
 
         preds = self._loaded_model.predict(data)
+
+        if is_return_all_data:
+            data = np.squeeze(data)
+            preds = np.squeeze(preds)
+            pred1 = preds[:, :np.prod(data.shape[1:3])//16]
+            pred2 = preds[:, np.prod(data.shape[1:3])//16 : -np.prod(data.shape[1:3])]
+            pred3 = preds[:, -np.prod(data.shape[1:3]):]
+
+            pred1 = np.reshape(pred1, (data.shape[0], data.shape[1] // 4, data.shape[2] // 4))
+            pred2 = np.reshape(pred2, (data.shape[0], data.shape[1] // 2, data.shape[2] // 2))
+            pred3 = np.reshape(pred3, (data.shape[0], data.shape[1], data.shape[2]))
+
+            import cv2
+            data1 = np.zeros((data.shape[0], data.shape[1] // 4, data.shape[2] // 4))
+            data2 = np.zeros((data.shape[0], data.shape[1] // 2, data.shape[2] // 2))
+
+            for slice_index in range(data.shape[0]):
+                data1[slice_index, ...] = cv2.resize(data[slice_index, ...], (data.shape[1] // 4, data.shape[2] // 4))
+                data2[slice_index, ...] = cv2.resize(data[slice_index, ...], (data.shape[1] // 2, data.shape[2] // 2))
+
+            data1 = np.transpose(data1, (1, 2, 0))
+            data2 = np.transpose(data2, (1, 2, 0))
+            data3 = np.transpose(data, (1, 2, 0))
+
+            pred1 = np.transpose(pred1, (1, 2, 0))
+            pred2 = np.transpose(pred2, (1, 2, 0))
+            pred3 = np.transpose(pred3, (1, 2, 0))
+
+            return [data1, data2, data3], [pred1, pred2, pred3]
 
         preds = preds[:, -np.prod(self._image_preparer.GetShape()):, :]
         preds = np.reshape(preds, (
@@ -97,12 +127,13 @@ class ProstateSegmentation2D:
         mask = np.asarray(preds > 0.5, dtype=np.uint8)
         mask = self.__KeepLargest(mask)
 
+
         # To process the extremely cases
         final_shape = image.GetSize()
         final_shape = [final_shape[1], final_shape[0], final_shape[2]]
         mask = Crop3DImage(mask, final_shape)
 
-        mask_image =  GetImageFromArray(mask, image)
+        mask_image =  GetImageFromArrayByImage(mask, image)
         if store_folder:
             if os.path.isdir(store_folder):
                 store_folder = os.path.join(store_folder, 'prostate_roi.nii.gz')
