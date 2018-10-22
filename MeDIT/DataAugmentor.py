@@ -342,5 +342,12 @@ def main():
     #     new_roi = aug_generator.Execute(roi, interpolation_method='nearest')
     #     DrawBoundaryOfBinaryMask(Normalize01(new_data), new_roi)
 
+def Test2D():
+    import numpy as np
+    data = np.reshape(np.arange(144), (12, 12))
+    data_augmentor = DataAugmentor2D()
+    result = data_augmentor.Execute(data, aug_parameter={'stretch_x': 0.5}, interpolation_method='linear')
+    print(result)
+
 if __name__ == '__main__':
-    main()
+    Test2D()

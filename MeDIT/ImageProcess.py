@@ -185,10 +185,23 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
                     cmd += r' -tp "' + abs_transform_path + '"'
 
         os.system(cmd)
+    except:
+        shutil.rmtree(temp_folder)
 
+    try:
         shutil.move(os.path.join(temp_folder, 'result.nii'), file_name + '_Reg' + suffex)
         shutil.rmtree(temp_folder)
     except:
+        pass
+
+    try:
+        shutil.move(os.path.join(temp_folder, 'result.hdr'), file_name + '_Reg' + '.hdr')
+        shutil.move(os.path.join(temp_folder, 'result.img'), file_name + '_Reg' + '.img')
+        shutil.rmtree(temp_folder)
+    except:
+        pass
+
+    if os.path.exists(temp_folder):
         shutil.rmtree(temp_folder)
 
 ################################################################################
