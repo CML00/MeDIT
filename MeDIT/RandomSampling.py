@@ -115,7 +115,7 @@ def GenSamplingMask(image_shape, sampling_percentage, center_sampling_rate, samp
     return mask
 
 
-def ReconstructADMM_2D(fullysampled_kdata, mask, is_show=True):
+def ReconstructADMM_2D(fullysampled_kdata, mask, iterations=10, step=0.05, tv_r=0.005, rho=1.0, is_show=True):
     fullysampled_kdata = fullysampled_kdata[..., np.newaxis]
     FTm = opts.FFTW2d_kmask(mask)
 
@@ -131,11 +131,11 @@ def ReconstructADMM_2D(fullysampled_kdata, mask, is_show=True):
     b = b / scaling
 
     # do cs mri recon
-    Nite = 10  # number of iterations
-    step = 0.05  # step size
-    tv_r = 0.005  # regularization term for tv term
-    rho = 1.0
-    th = 1  # threshold
+    Nite = iterations  # number of iterations
+    step = step  # step size
+    tv_r = tv_r  # regularization term for tv term
+    rho = rho
+    # th = 1  # threshold
 
     # xopt = solvers.IST_2(FTm.forward,FTm.backward,b, Nite, step,th) #soft thresholding
     xopt = solvers.ADMM_l2Afxnb_tvx(Aopt.forward, Aopt.backward, b, Nite, step, tv_r, rho, is_show=is_show)

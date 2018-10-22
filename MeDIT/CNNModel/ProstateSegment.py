@@ -6,9 +6,9 @@ from scipy import ndimage
 from keras.models import model_from_yaml
 
 from MeDIT.CNNModel.ImagePrepare import ImagePrepare
-from MeDIT.SaveAndLoad import GetDataFromSimpleITK
-from MeDIT.Normalize import Normalize
-from MeDIT.SaveAndLoad import GetImageFromArray, SaveNiiImage
+from MeDIT.ImageProcess import GetDataFromSimpleITK, GetImageFromArrayByImage
+from MeDIT.Normalize import NormalizeForTensorflow
+from MeDIT.SaveAndLoad import SaveNiiImage
 from MeDIT.ArrayProcess import Crop3DImage
 
 class ProstateSegmentation2D:
@@ -82,7 +82,7 @@ class ProstateSegmentation2D:
 
         data = self._image_preparer.CropDataShape(data, resolution)
         data = self.TransDataFor2DModel(data)
-        data = Normalize(data)
+        data = NormalizeForTensorflow(data)
 
         preds = self._loaded_model.predict(data)
 
@@ -102,7 +102,7 @@ class ProstateSegmentation2D:
         final_shape = [final_shape[1], final_shape[0], final_shape[2]]
         mask = Crop3DImage(mask, final_shape)
 
-        mask_image =  GetImageFromArray(mask, image)
+        mask_image =  GetImageFromArrayByImage(mask, image)
         if store_folder:
             if os.path.isdir(store_folder):
                 store_folder = os.path.join(store_folder, 'prostate_roi.nii.gz')
