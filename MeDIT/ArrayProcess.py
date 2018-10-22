@@ -52,6 +52,12 @@ def RemoveSmallRegion(mask, size_thres=50):
             mask[label_im == i] = 0
     return mask
 
+def Remove2DSmallPhysicalRegion(mask, image, physical_region=50):
+    # seperate each connected ROI
+    size_thres = physical_region / (image.GetSpacing()[0] * image.GetSpacing()[1])
+    return RemoveSmallRegion(mask, size_thres=size_thres)
+    
+
 ### Transfer index to position #######################################################################################
 def Index2XY(index, data_shape):
     '''

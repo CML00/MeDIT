@@ -8,7 +8,8 @@ from MeDIT.ArrayProcess  import ExtractPatch, XY2Index, Crop2DImage
 from MeDIT.CNNModel.ImagePrepare import ImagePrepare
 from MeDIT.CNNModel.ProstateSegment import ProstateSegmentation2D
 from MeDIT.Normalize import NormalizeForModality, NormalizeByROI
-from MeDIT.SaveAndLoad import GetDataFromSimpleITK, GetImageFromArray, SaveNiiImage
+from MeDIT.SaveAndLoad import GetImageFromArrayByImage, SaveNiiImage
+from MeDIT.ImageProcess import GetDataFromSimpleITK
 from scipy import ndimage
 from scipy.ndimage import filters
 
@@ -137,8 +138,8 @@ class CST2AdcDwiDetect():
         mask = np.asarray(pred > 0.5, dtype=np.uint8)
         mask = self.__RemoveSmallRegion(mask, 20)
 
-        mask_image = GetImageFromArray(mask, t2_image)
-        pred_image = GetImageFromArray(pred, t2_image)
+        mask_image = GetImageFromArrayByImage(mask, t2_image)
+        pred_image = GetImageFromArrayByImage(pred, t2_image)
         if store_folder:
             if os.path.isdir(store_folder):
                 roi_output = os.path.join(store_folder, 'CS_PCa_ROI.nii.gz')
@@ -159,7 +160,7 @@ def testDetect():
     adc_image, _, adc_data = LoadNiiData(r'c:\MyCode\MPApp\ProstateX-0004\007_ep2d_diff_tra_DYNDIST_MIX_ADC_Reg.nii', dtype=np.float32, is_show_info=True)
 
     dwi_data = dwi_data[..., -1]
-    dwi_image = GetImageFromArray(dwi_data, adc_image)
+    dwi_image = GetImageFromArrayByImage(dwi_data, adc_image)
 
     print(t2_data.shape, adc_data.shape, dwi_data.shape)
 
