@@ -71,8 +71,11 @@ def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], metho
         expected_shape = [int(raw_resolution * raw_size / dest_resolution) for
                        dest_resolution, raw_size, raw_resolution in zip(expected_resolution, shape, resolution)]
 
-    output = sitk.Resample(image, expected_shape, sitk.AffineTransform(len(shape)), method, image.GetOrigin(),
-                           expected_resolution, image.GetDirection(), dtype)
+    # output = sitk.Resample(image, expected_shape, sitk.AffineTransform(len(shape)), method, image.GetOrigin(),
+    #                        expected_resolution, image.GetDirection(), dtype)
+    resample_filter = sitk.ResampleImageFilter()
+    output = resample_filter.Execute(image, expected_shape, sitk.AffineTransform(len(shape)), method, image.GetOrigin(),
+                           expected_resolution, image.GetDirection(), 0.0, dtype)
     return output
 
 def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
@@ -82,6 +85,19 @@ def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_sha
     image = sitk.ReadImage(file_path)
     resized_image = ResizeSipmleITKImage(image, expected_resolution, expected_shape, method=method, dtype=dtype)
     sitk.WriteImage(resized_image, store_path)
+
+def ResizeROINiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[]):
+    if not store_path:
+        store_path = GenerateFileName(file_path, 'Resize')
+    image = sitk.ReadImage(file_path)
+    resized_image = ResizeSipmleITKImage(image, expected_resolution, expected_shape, method=sitk.sitkLinear, dtype=sitk.sitkFloat32)
+    data = sitk.GetArrayFromImage(resized_image)
+
+    new_data = np.zeros(data.shape, dtype=np.uint8)
+    new_data[data > 0.5] = 1
+    new_image = sitk.GetImageFromArray(new_data)
+    new_image.CopyInformation(resized_image)
+    sitk.WriteImage(new_image, store_path)
 
 ################################################################################
 def RegistrateImage(fixed_image, moving_image, interpolation_method=sitk.sitkBSpline):
