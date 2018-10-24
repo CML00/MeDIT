@@ -4,20 +4,32 @@ import matplotlib.pyplot as plt
 from scipy.ndimage.morphology import binary_dilation
 import matplotlib.pyplot as plt
 import sys
+from scipy.ndimage import imread
+import os
+from pyqtgraph.Qt import QtGui
+import pyqtgraph as pg
+
 
 from MeDIT.Normalize import Normalize01
+from MeDIT.ArrayProcess import Index2XY
 
 def DrawBoundaryOfBinaryMask(image, ROI):
+    '''
+    show the image with ROIs
+    :param image: the 2D image
+    :param ROI: the binary ROI with same size of the image
+    :return:
+    '''
     plt.imshow(image, cmap='Greys_r')
     plt.contour(ROI, colors='y')
     plt.show()
 
 def LoadWaitBar(total, progress):
     '''
-    runs = 300
-    for run_num in range(runs):
-        time.sleep(.1)
-        updt(runs, run_num + 1)
+    To show the waitbar for visulization
+    :param total: the number of the total step
+    :param progress: the number of the current processing
+    :return:
     '''
     barLength, status = 20, ""
     progress = float(progress) / float(total)
@@ -155,21 +167,19 @@ def FlattenAllSlices(data):
         else:
             width += 1
     imshow_data = np.zeros((row * width, col * width))
-    from ImageProcess import Index2XY
-    slice_indexs =range(0, slice)
+    slice_indexs = range(0, slice)
     x, y = Index2XY(slice_indexs, (width, width))
 
     for x_index, y_index, slice_index in zip(x, y, slice_indexs):
         imshow_data[x_index * row : (x_index + 1) * row, y_index * row : (y_index + 1) * row] = data[..., slice_index]
 
-    from Normalize import Normalize01
     plt.imshow(Normalize01(imshow_data), cmap='gray')
     plt.show()
 
 ################################################################
 # 该函数将每个2d图像进行变换。
 def MergeImageWithROI(data, roi):
-    if data.ndim > 3:
+    if data.ndim >= 3:
         print("Should input 2d image")
         return data
 
@@ -199,4 +209,120 @@ def MergeImageWithROI(data, roi):
         new_data[index_x, index_y, :] = 0
         new_data[index_x, index_y, 2] = np.max(data)
     return new_data
+
+def Merge3DImageWithROI(data, roi):
+    if not isinstance(roi, list):
+        roi = [roi]
+
+    if len(roi) > 3:
+        print('Only show 3 ROIs')
+        return data
+
+    new_data = np.zeros((data.shape[2], data.shape[0], data.shape[1], 3))
+    for slice_index in range(data.shape[2]):
+        slice = data[..., slice_index]
+        one_roi_list = []
+        for one_roi in roi:
+            one_roi_list.append(one_roi[..., slice_index])
+
+        new_data[slice_index, ...] = MergeImageWithROI(slice, one_roi_list)
+
+    return new_data
+
+def FusionImage(data, mask, is_show=False):
+    '''
+    To Fusion two 2D images.
+    :param data: The background
+    :param mask: The fore-ground
+    :param is_show: Boolen. If set to True, to show the result; else to return the fusion image. (RGB).
+    :return:
+    '''
+    if data.ndim >= 3:
+        print("Should input 2d image")
+        return data
+
+    dpi = 96
+    x, y = data.shape
+    w = y / dpi
+    h = x / dpi
+
+    fig = plt.figure(frameon=False)
+    fig.set_size_inches(w, h)
+
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+
+    plt.imshow(data, cmap='gray')
+    plt.imshow(mask, cmap='hot', alpha=0.3)
+
+    fig.subplots_adjust(bottom=0)
+    fig.subplots_adjust(top=1)
+    fig.subplots_adjust(right=1)
+    fig.subplots_adjust(left=0)
+
+    if is_show:
+        plt.show()
+    else:
+        plt.axis('off')
+        plt.savefig('temp.jpg', format='jpeg', aspect='normal', bbox_inches='tight', pad_inches=0.0)
+        array = imread('temp.jpg')
+        os.remove('temp.jpg')
+        return array
+
+def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
+    if array.shape != roi.shape:
+        print('Array and ROI must have same shape')
+        return
+
+    array = Normalize01(array)
+    cmap = plt.get_cmap(color_map)
+    rgba_array = cmap(array)
+    rgb_array = np.delete(rgba_array, 3, 2)
+
+    print(array.shape)
+    print(rgb_array.shape)
+
+    index_roi_x, index_roi_y = np.where(roi == 0)
+    for index_x, index_y in zip(index_roi_x, index_roi_y):
+        rgb_array[index_x, index_y, :] = array[index_x, index_y]
+
+    plt.imshow(rgb_array)
+    plt.axis('off')
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    if store_path:
+        plt.savefig(store_path, format='tif', dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close()
+    if is_show:
+        plt.show()
+
+def Imshow3DArray(data, ROI=None):
+    '''
+    Imshow 3D Array, the dimension is row x col x slice. If the ROI was combined in the data, the dimension is:
+    slice x row x col x color
+    :param data: 3D Array [row x col x slice] or 4D array [slice x row x col x RGB]
+    '''
+    if isinstance(ROI, list) or isinstance(ROI, type(data)):
+        data = Merge3DImageWithROI(data, ROI)
+
+    if np.ndim(data) == 3:
+        data = np.swapaxes(data, 0, 1)
+        data = np.transpose(data)
+
+    pg.setConfigOptions(imageAxisOrder='row-major')
+    app = QtGui.QApplication([])
+
+    win = QtGui.QMainWindow()
+    win.resize(800, 800)
+    imv = pg.ImageView()
+    win.setCentralWidget(imv)
+    win.show()
+    win.setWindowTitle('Imshow3D')
+
+    imv.setImage(data)
+    app.exec_()
 
