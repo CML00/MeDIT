@@ -178,7 +178,7 @@ def FlattenImages(data_list, is_show=True):
         x, y = Index2XY(case_index, (width, width))
 
         for x_index, y_index, index in zip(x, y, case_index):
-            imshow_data[x_index * row: (x_index + 1) * row, y_index * row: (y_index + 1) * row] = data_list[index]
+            imshow_data[x_index * row: (x_index + 1) * row, y_index * col: (y_index + 1) * col] = data_list[index]
 
         if is_show:
             plt.imshow(Normalize01(imshow_data), cmap='gray')
@@ -201,7 +201,7 @@ def FlattenImages(data_list, is_show=True):
         x, y = Index2XY(case_index, (width, width))
 
         for x_index, y_index, index in zip(x, y, case_index):
-            imshow_data[x_index * row: (x_index + 1) * row, y_index * row: (y_index + 1) * row, :] = data_list[index]
+            imshow_data[x_index * row: (x_index + 1) * row, y_index * col: (y_index + 1) * col, :] = data_list[index]
 
         if is_show:
             Imshow3DArray(Normalize01(imshow_data), cmap='gray')
@@ -222,7 +222,7 @@ def FlattenAllSlices(data, is_show=True):
     x, y = Index2XY(slice_indexs, (width, width))
 
     for x_index, y_index, slice_index in zip(x, y, slice_indexs):
-        imshow_data[x_index * row : (x_index + 1) * row, y_index * row : (y_index + 1) * row] = data[..., slice_index]
+        imshow_data[x_index * row : (x_index + 1) * row, y_index * col : (y_index + 1) * col] = data[..., slice_index]
 
     if is_show:
         plt.imshow(Normalize01(imshow_data), cmap='gray')
