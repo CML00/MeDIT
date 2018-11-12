@@ -4,6 +4,7 @@ import os
 import SimpleITK as sitk
 import pydicom
 import imageio
+import pandas as pd
 from copy import deepcopy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
@@ -11,6 +12,9 @@ import matplotlib.pyplot as plt
 from MeDIT.ImageProcess import GetImageFromArrayByImage
 
 from MeDIT.Normalize import Normalize01
+
+def LoadCSVwithChineseInPandas(file_path, **kwargs):
+    return pd.read_csv(file_path, encoding="gbk", **kwargs)
 
 def SaveArrayAsGreyImage(array, store_path, roi=0, dip=300):
     # image = Normalize01(image)

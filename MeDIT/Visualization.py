@@ -300,7 +300,7 @@ def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     if is_show:
         plt.show()
 
-def Imshow3DArray(data, ROI=None):
+def Imshow3DArray(data, ROI=None, window_size=[800, 800]):
     '''
     Imshow 3D Array, the dimension is row x col x slice. If the ROI was combined in the data, the dimension is:
     slice x row x col x color
@@ -317,7 +317,7 @@ def Imshow3DArray(data, ROI=None):
     app = QtGui.QApplication([])
 
     win = QtGui.QMainWindow()
-    win.resize(800, 800)
+    win.resize(window_size[0], window_size[1])
     imv = pg.ImageView()
     win.setCentralWidget(imv)
     win.show()
