@@ -85,6 +85,7 @@ def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_sha
     image = sitk.ReadImage(file_path)
     resized_image = ResizeSipmleITKImage(image, expected_resolution, expected_shape, method=method, dtype=dtype)
     sitk.WriteImage(resized_image, store_path)
+    return resized_image
 
 def ResizeROINiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[]):
     if not store_path:
@@ -98,6 +99,7 @@ def ResizeROINiiFile(file_path, store_path='', expected_resolution=[], expected_
     new_image = sitk.GetImageFromArray(new_data)
     new_image.CopyInformation(resized_image)
     sitk.WriteImage(new_image, store_path)
+    return new_image
 
 ################################################################################
 def RegistrateImage(fixed_image, moving_image, interpolation_method=sitk.sitkBSpline):
