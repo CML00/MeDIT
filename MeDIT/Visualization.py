@@ -157,7 +157,58 @@ def Imshow3DConsole(volume, vmin=None, vmax=None):
     fig.canvas.mpl_connect('key_press_event', process_key)
 
 ##############################################################
-def FlattenAllSlices(data):
+def FlattenImages(data_list, is_show=True):
+    if len(data_list) == 1:
+        return data_list[0]
+    width = 1
+
+    if data_list[0].ndim == 2:
+        row, col = data_list[0].shape
+        for one_data in data_list:
+            temp_row, temp_col = one_data.shape
+            assert(temp_row == row and temp_col == col)
+
+        while True:
+            if width * width >= len(data_list):
+                break
+            else:
+                width += 1
+        imshow_data = np.zeros((row * width, col * width))
+        case_index = range(0, len(data_list))
+        x, y = Index2XY(case_index, (width, width))
+
+        for x_index, y_index, index in zip(x, y, case_index):
+            imshow_data[x_index * row: (x_index + 1) * row, y_index * row: (y_index + 1) * row] = data_list[index]
+
+        if is_show:
+            plt.imshow(Normalize01(imshow_data), cmap='gray')
+            plt.show()
+        return imshow_data
+
+    elif data_list[0].ndim == 3:
+        row, col, slice = data_list[0].shape
+        for one_data in data_list:
+            temp_row, temp_col, temp_slice = one_data.shape
+            assert (temp_row == row and temp_col == col and temp_slice == slice)
+
+        while True:
+            if width * width >= len(data_list):
+                break
+            else:
+                width += 1
+        imshow_data = np.zeros((row * width, col * width, slice))
+        case_index = range(0, len(data_list))
+        x, y = Index2XY(case_index, (width, width))
+
+        for x_index, y_index, index in zip(x, y, case_index):
+            imshow_data[x_index * row: (x_index + 1) * row, y_index * row: (y_index + 1) * row, :] = data_list[index]
+
+        if is_show:
+            Imshow3DArray(Normalize01(imshow_data), cmap='gray')
+            
+        return imshow_data
+
+def FlattenAllSlices(data, is_show=True):
     assert(data.ndim == 3)
     row, col, slice = data.shape
     width = 1
@@ -173,8 +224,10 @@ def FlattenAllSlices(data):
     for x_index, y_index, slice_index in zip(x, y, slice_indexs):
         imshow_data[x_index * row : (x_index + 1) * row, y_index * row : (y_index + 1) * row] = data[..., slice_index]
 
-    plt.imshow(Normalize01(imshow_data), cmap='gray')
-    plt.show()
+    if is_show:
+        plt.imshow(Normalize01(imshow_data), cmap='gray')
+        plt.show()
+    return imshow_data
 
 ################################################################
 # 该函数将每个2d图像进行变换。

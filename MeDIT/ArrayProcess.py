@@ -2,6 +2,20 @@ import numpy as np
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
 from scipy import ndimage
 
+
+def DetectRegionBlurry(prostate_roi, hard_dist=5, soft_dist=5):
+    prostate_roi = binary_dilation(prostate_roi, np.ones((3, 3)), iterations=hard_dist)
+
+    prob = np.zeros(prostate_roi.shape, dtype=np.float32)
+    weights = 1. / soft_dist
+
+    mask = prostate_roi
+    for index in range(soft_dist):
+        prob += weights * mask
+        mask = binary_dilation(mask, np.ones((3, 3)))
+
+    return prob
+
 def BluryEdgeOfROI(initial_ROI):
     '''
     This function blurry the ROI. This function can be used when the ROI was drawn not definitely.
