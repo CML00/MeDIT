@@ -52,18 +52,20 @@ def NormalizeForModality(data):
 
     return data
 
+def NormalizeEachSlice01(data):
+    new_data = np.asarray(data, dtype=np.float32)
+    for slice_index in range(np.shape(new_data)[2]):
+        new_data[:, :, slice_index] = new_data[:, :, slice_index] - np.min(new_data[:, :, slice_index])
+        if np.max(new_data[:, :, slice_index]) > 0.001:
+            new_data[:, :, slice_index] = np.divide(new_data[:, :, slice_index], np.max(new_data[:, :, slice_index]))
+
+    return new_data
+
 def Normalize01(data):
-	new_data = np.asarray(data, dtype=np.float32)
-	if len(np.shape(new_data)) == 2 or len(np.shape(new_data)) == 1:
-		new_data = new_data - np.min(new_data)
-		new_data = new_data / np.max(new_data)
-	
-	if len(np.shape(new_data)) == 3:
-		for slice_index in range(np.shape(new_data)[2]):
-			new_data[:, :, slice_index] = new_data[:, :, slice_index] - np.min(new_data[:, :, slice_index])
-			if np.max(new_data[:, :, slice_index]) > 0.001:
-				new_data[:, :, slice_index] = np.divide(new_data[:, :, slice_index], np.max(new_data[:, :, slice_index]))
-	return new_data
+    new_data = np.asarray(data, dtype=np.float32)
+    new_data = new_data - np.min(new_data)
+    new_data = new_data / np.max(new_data)
+    return new_data
 
 def IntensityTransfer(image, target_max, target_min, raw_min=-9999, raw_max=-9999):
 	assert(target_max >= target_min)
