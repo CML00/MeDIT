@@ -1,4 +1,4 @@
-import dicom2nifti
+# import dicom2nifti
 import pydicom
 import os
 import shutil
