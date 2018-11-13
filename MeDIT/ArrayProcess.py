@@ -2,6 +2,20 @@ import numpy as np
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
 from scipy import ndimage
 
+
+def DetectRegionBlurry(prostate_roi, hard_dist=5, soft_dist=5):
+    prostate_roi = binary_dilation(prostate_roi, np.ones((3, 3)), iterations=hard_dist)
+
+    prob = np.zeros(prostate_roi.shape, dtype=np.float32)
+    weights = 1. / soft_dist
+
+    mask = prostate_roi
+    for index in range(soft_dist):
+        prob += weights * mask
+        mask = binary_dilation(mask, np.ones((3, 3)))
+
+    return prob
+
 def BluryEdgeOfROI(initial_ROI):
     '''
     This function blurry the ROI. This function can be used when the ROI was drawn not definitely.
@@ -56,7 +70,6 @@ def Remove2DSmallPhysicalRegion(mask, image, physical_region=50):
     # seperate each connected ROI
     size_thres = physical_region / (image.GetSpacing()[0] * image.GetSpacing()[1])
     return RemoveSmallRegion(mask, size_thres=size_thres)
-    
 
 ### Transfer index to position #######################################################################################
 def Index2XY(index, data_shape):
@@ -346,3 +359,15 @@ def Crop3DImage(image, shape):
 
     return new_image
 
+def GetIndexRangeInROI(roi_mask, target_value=1):
+    if np.ndim(roi_mask) == 2:
+        x, y = np.where(roi_mask == target_value)
+        x = np.unique(x)
+        y = np.unique(y)
+        return x, y
+    elif np.ndim(roi_mask) == 3:
+        x, y, z = np.where(roi_mask == target_value)
+        x = np.unique(x)
+        y = np.unique(y)
+        z = np.unique(z)
+        return x, y, z
