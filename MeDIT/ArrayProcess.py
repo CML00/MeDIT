@@ -70,7 +70,6 @@ def Remove2DSmallPhysicalRegion(mask, image, physical_region=50):
     # seperate each connected ROI
     size_thres = physical_region / (image.GetSpacing()[0] * image.GetSpacing()[1])
     return RemoveSmallRegion(mask, size_thres=size_thres)
-    
 
 ### Transfer index to position #######################################################################################
 def Index2XY(index, data_shape):
@@ -179,7 +178,7 @@ def ExtractPatch(image, patch_size, center_point=[-1, -1], is_shift=True):
     patch_col_index = [center_point[1] - patch_size[1] // 2, center_point[1] + patch_size[1] - patch_size[1] // 2]
 
     patch = image[patch_row_index[0]:patch_row_index[1], patch_col_index[0]:patch_col_index[1]]
-    return patch
+    return patch, [patch_row_index, patch_col_index]
 
 def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
     '''
@@ -360,3 +359,15 @@ def Crop3DImage(image, shape):
 
     return new_image
 
+def GetIndexRangeInROI(roi_mask, target_value=1):
+    if np.ndim(roi_mask) == 2:
+        x, y = np.where(roi_mask == target_value)
+        x = np.unique(x)
+        y = np.unique(y)
+        return x, y
+    elif np.ndim(roi_mask) == 3:
+        x, y, z = np.where(roi_mask == target_value)
+        x = np.unique(x)
+        y = np.unique(y)
+        z = np.unique(z)
+        return x, y, z

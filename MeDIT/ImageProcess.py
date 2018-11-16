@@ -4,6 +4,7 @@ import os
 import shutil
 import SimpleITK as sitk
 import numpy as np
+from copy import deepcopy
 
 def GetImageFromArrayByImage(show_data, refer_image):
     data = np.transpose(show_data, (2, 0, 1))
@@ -59,17 +60,38 @@ def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], metho
     resolution = image.GetSpacing()
 
     if expected_resolution == []:
-        if expected_shape[0] == 0: expected_shape[0] = shape[0]
-        if expected_shape[1] == 0: expected_shape[1] = shape[1]
-        if expected_shape[2] == 0: expected_shape[2] = shape[2]
+        dim_0, dim_1, dim_2 = False, False, False
+        if expected_shape[0] == 0: 
+            expected_shape[0] = shape[0]
+            dim_0 = True
+        if expected_shape[1] == 0: 
+            expected_shape[1] = shape[1]
+            dim_1 = True
+        if expected_shape[2] == 0: 
+            expected_shape[2] = shape[2]
+            dim_2 = True
         expected_resolution = [raw_resolution * raw_size / dest_size for dest_size, raw_size, raw_resolution in
                                zip(expected_shape, shape, resolution)]
+        if dim_0: expected_resolution[0] = resolution[0]
+        if dim_1: expected_resolution[1] = resolution[1]
+        if dim_2: expected_resolution[2] = resolution[2]
+        
     elif expected_shape == []:
-        if expected_resolution[0] == 0: expected_resolution[0] = resolution[0]
-        if expected_resolution[1] == 0: expected_resolution[1] = resolution[1]
-        if expected_resolution[2] == 0: expected_resolution[2] = resolution[2]
+        dim_0, dim_1, dim_2 = False, False, False
+        if expected_resolution[0] < 1e-6: 
+            expected_resolution[0] = resolution[0]
+            dim_0 = True
+        if expected_resolution[1] < 1e-6: 
+            expected_resolution[1] = resolution[1]
+            dim_1 = True
+        if expected_resolution[2] < 1e-6: 
+            expected_resolution[2] = resolution[2]
+            dim_2 = True
         expected_shape = [int(raw_resolution * raw_size / dest_resolution) for
                        dest_resolution, raw_size, raw_resolution in zip(expected_resolution, shape, resolution)]
+        if dim_0: expected_shape[0] = shape[0]
+        if dim_1: expected_shape[1] = shape[1]
+        if dim_2: expected_shape[2] = shape[2]
 
     # output = sitk.Resample(image, expected_shape, sitk.AffineTransform(len(shape)), method, image.GetOrigin(),
     #                        expected_resolution, image.GetDirection(), dtype)
@@ -79,6 +101,8 @@ def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], metho
     return output
 
 def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
+    expected_resolution = deepcopy(expected_resolution)
+    expected_shape = deepcopy(expected_shape)
     if not store_path:
         store_path = GenerateFileName(file_path, 'Resize')
 
@@ -88,6 +112,8 @@ def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_sha
     return resized_image
 
 def ResizeROINiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[]):
+    expected_resolution = deepcopy(expected_resolution)
+    expected_shape = deepcopy(expected_shape)
     if not store_path:
         store_path = GenerateFileName(file_path, 'Resize')
     image = sitk.ReadImage(file_path)
