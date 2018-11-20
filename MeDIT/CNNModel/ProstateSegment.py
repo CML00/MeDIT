@@ -186,7 +186,7 @@ class ProstateSegmentation2_5D:
 
         return preds
 
-    def Run(self, image, model_folder_path, store_folder='', is_return_all_data=False):
+    def Run(self, image, model_folder_path, store_folder='', is_return_all_data=False, password=''):
         resolution = image.GetSpacing()
         _, data = GetDataFromSimpleITK(image, dtype=np.float32)
 
@@ -252,7 +252,6 @@ class ProstateSegmentation2_5D:
             SaveNiiImage(store_folder, mask_image)
 
         return mask_image, mask
-
 
 def testSeg():
     model_folder_path = r'z:\SuccessfulModel\ProstateSegment2_5'
