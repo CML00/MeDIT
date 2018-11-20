@@ -26,10 +26,10 @@ def Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_ra
     for index in center_index:
         sample_order.append(index)
 
-    random_sample_number = phase_encoding_number - len(center_index)
     random_sample_index = np.where(sample == 0)[0].tolist()
 
     # Generate Gaussian Distribution
+    random_sample_number = phase_encoding_number - len(center_index)
     sigma = random_sample_number / 6
     x = np.arange(-random_sample_number // 2, random_sample_number // 2)
     pdf_array = 1 / np.sqrt(2 * np.pi * sigma * sigma) * np.exp(-1 * x * x / (2 * sigma * sigma))
@@ -70,6 +70,7 @@ def Generate1DGaussianSamplingStrategy(phase_encoding_number, center_sampling_ra
         temp_image[sample_index, :] = 255
 
     return pdf, sample_order
+
 
 def Save2DSamplingStategyAsGIF(sampling_order, store_path, image_shape=[], sample_axis=0):
     if image_shape == []:
