@@ -263,6 +263,56 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     if os.path.exists(temp_folder):
         shutil.rmtree(temp_folder)
 
+def FindNfitiDWIConfigFile(file_path, is_allow_vec_missing=True):
+    file_name = os.path.splitext(file_path)[0]
+
+    dwi_file = file_name + '.nii'
+    dwi_bval_file = file_name + '.bval'
+    dwi_vec_file = file_name + '.bvec'
+
+    if os.path.exists(dwi_file) and os.path.exists(dwi_bval_file):
+        if os.path.exists(dwi_vec_file):
+            return dwi_file, dwi_bval_file, dwi_vec_file
+        else:
+            if is_allow_vec_missing:
+                return dwi_file, dwi_bval_file, ''
+            else:
+                print('Check these files')
+                return '', '', ''
+    else:
+        print('Check these files')
+        return '', '', ''
+
+def SeparateNfitiDWIFile(dwi_file_path, ref_image_path, specific_bvalue=-1, tol=200):
+    dwi_file, dwi_bval_file, _ = FindNfitiDWIConfigFile(dwi_file_path)
+    if dwi_bval_file and dwi_bval_file:
+        dwi_image = sitk.ReadImage(dwi_image_path)
+        ref_image = sitk.ReadImage(ref_image_path)
+
+        with open(dwi_bval_file, 'r') as b_file:
+            bvalue_list = b_file.read().split(' ')
+        bvalue_list[-1] = bvalue_list[-1][:-1]
+
+        dwi_data = sitk.GetArrayFromImage(dwi_image)
+
+        dwi_list = []
+        for index in range(len(bvalue_list)):
+            temp_data = dwi_data[index, ...]
+            temp_image = sitk.GetImageFromArray(temp_data)
+            temp_image.CopyInformation(ref_image)
+            dwi_list.append(temp_image)
+
+        if specific_b < 0:
+            for b, dwi_image in zip(bvalue_list, dwi_image_list):
+                sitk.WriteImage(dwi_image, os.path.join(store_folder, 'dwi_b' + b + '.nii'))
+        else:
+            diff = abs(np.array(bvalue_list) - specific_bvalue)
+            if min(diff) > tol:
+                return
+            else:
+                index = np.argmin(diff)
+                sitk.WriteImage(dwi_image_list[index], os.path.join(store_folder, 'dwi_b' + bvalue_list[index] + '.nii'))
+
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):
 #     if isinstance(adc_image, str):
