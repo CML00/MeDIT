@@ -260,7 +260,7 @@ class CST2AdcDwiProstateRoiDetect():
             adc_slice = adc_slice[np.newaxis, ..., np.newaxis]
             dwi_slice = dwi_slice[np.newaxis, ..., np.newaxis]
 
-            prostate_roi_data = DetectRegionBlurry(prostate_roi_slice, hard_dist=5, soft_dist=5)
+            prostate_roi_slice = DetectRegionBlurry(prostate_roi_slice, hard_dist=5, soft_dist=5)
             prostate_slice = prostate_roi_slice[np.newaxis, ..., np.newaxis]
 
             input_list = [t2_slice, adc_slice, dwi_slice, prostate_slice]

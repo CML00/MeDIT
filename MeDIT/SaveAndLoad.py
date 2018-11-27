@@ -165,7 +165,7 @@ def LoadDicomData(data_path):
 def SaveAsGif(image_list, store_path, duration=1):
     gif = []
     for image in image_list:
-        gif.append(deepcopy(image))
+        gif.append(np.asarray(deepcopy(image), dtype=np.uint8))
 
     imageio.mimsave(store_path, gif, duration=duration)
 
