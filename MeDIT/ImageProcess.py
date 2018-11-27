@@ -286,7 +286,7 @@ def FindNfitiDWIConfigFile(file_path, is_allow_vec_missing=True):
 def SeparateNfitiDWIFile(dwi_file_path, ref_image_path, specific_bvalue=-1, tol=200):
     dwi_file, dwi_bval_file, _ = FindNfitiDWIConfigFile(dwi_file_path)
     if dwi_bval_file and dwi_bval_file:
-        dwi_image = sitk.ReadImage(dwi_image_path)
+        dwi_image = sitk.ReadImage(dwi_file)
         ref_image = sitk.ReadImage(ref_image_path)
 
         with open(dwi_bval_file, 'r') as b_file:
@@ -302,16 +302,18 @@ def SeparateNfitiDWIFile(dwi_file_path, ref_image_path, specific_bvalue=-1, tol=
             temp_image.CopyInformation(ref_image)
             dwi_list.append(temp_image)
 
-        if specific_b < 0:
-            for b, dwi_image in zip(bvalue_list, dwi_image_list):
-                sitk.WriteImage(dwi_image, os.path.join(store_folder, 'dwi_b' + b + '.nii'))
+        if specific_bvalue < 0:
+            for b, dwi_image in zip(bvalue_list, dwi_list):
+                store_path = os.path.splitext(dwi_file)[0] + '_b' + b + '.nii'
+                sitk.WriteImage(dwi_image, store_path)
         else:
-            diff = abs(np.array(bvalue_list) - specific_bvalue)
+            diff = abs(np.array(list(map(int, bvalue_list))) - specific_bvalue)
             if min(diff) > tol:
                 return
             else:
                 index = np.argmin(diff)
-                sitk.WriteImage(dwi_image_list[index], os.path.join(store_folder, 'dwi_b' + bvalue_list[index] + '.nii'))
+                store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
+                sitk.WriteImage(dwi_list[index], store_path)
 
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):
