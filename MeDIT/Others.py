@@ -54,6 +54,14 @@ def GetPhysicaladdress():
                 break
     return mac
 
+def RemoveKeyPathFromPathList(path_list, key_word):
+    new_path_list = []
+    for p in path_list:
+        if key_word not in p:
+            new_path_list.append(p)
+
+    return new_path_list
+
 if __name__ == '__main__':
     # array = np.array([1, 'z', 2.5, 1e-4, np.nan, '3'])
     # for index in np.arange(array.size):

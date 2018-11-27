@@ -156,7 +156,7 @@ def SaveSiemens2DDicomSeries(array, dicom_folder, store_folder):
         ds.PixelData = array[..., sort_index_list[store_index]].tostring()
         ds.save_as(os.path.join(store_folder, str(store_index) + '.dcm'))
 
-def GetDicomData(data_path):
+def LoadDicomData(data_path):
     ds = pydicom.dcmread(data_path)
     data = ds.pixel_array
 

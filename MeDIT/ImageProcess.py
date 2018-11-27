@@ -40,6 +40,21 @@ def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\
         cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
         os.system(cmd)
 
+def GetPatientIDfromDicomFolder(dicom_folder):
+    file_list = os.listdir(dicom_folder)
+    if len(file_list) == 0:
+        print('No dicom file')
+        return None
+
+    for file in file_list:
+        if not os.path.isfile(os.path.join(dicom_folder, file)):
+            print('There is other file!')
+            return None
+
+    one_file = os.path.join(dicom_folder, file_list[0])
+    dcm = pydicom.dcmread(one_file)
+    return dcm.PatientID
+
 ################################################################################
 def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
     '''
