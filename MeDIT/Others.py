@@ -1,5 +1,6 @@
 import SimpleITK as sitk
 import numpy as np
+import shutil
 import math
 import sys
 import os
@@ -53,6 +54,36 @@ def GetPhysicaladdress():
                 mac = line.split()[4]
                 break
     return mac
+
+def RemoveKeyPathFromPathList(path_list, key_word):
+    new_path_list = []
+    for p in path_list:
+        if key_word not in p:
+            new_path_list.append(p)
+
+    return new_path_list
+
+def CopyFile(source_path, dest_path, is_replace=True):
+    if not os.path.exists(source_path):
+        print('File does not exist: ', source_path)
+        return None
+    if (not os.path.exists(dest_path)) or is_replace:
+        shutil.copyfile(source_path, dest_path)
+
+def HumanSortFile(file_list):
+    import re
+
+    def tryint(s):
+        try:
+            return int(s)
+        except:
+            return s
+
+    def alphanum_key(s):
+        return [tryint(c) for c in re.split('([0-9]+)', s)]
+
+    file_list.sort(key=alphanum_key)
+    return file_list
 
 if __name__ == '__main__':
     # array = np.array([1, 'z', 2.5, 1e-4, np.nan, '3'])

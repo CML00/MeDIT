@@ -5,6 +5,39 @@ import shutil
 import SimpleITK as sitk
 import numpy as np
 from copy import deepcopy
+from scipy.ndimage.morphology import binary_dilation, binary_erosion
+
+def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
+    # Dilate or erode the roi image.
+    roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
+    if roi.ndim != 3:
+        print('Only process on 3D data.')
+        return
+    if np.max(roi) == 0:
+        print('Not valid ROI!')
+        return
+
+    if is_2d:
+        kernel = np.ones((3, 3))
+        processed_roi = np.zeros_like(roi)
+        for slice_index in range(roi.shape):
+            slice = roi[..., slice_index]
+            if np.max(slice) == 0:
+                continue
+            if process > 0:
+                processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process))
+            else:
+                processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process))
+    else:
+        kernel = np.ones((3, 3, 3))
+        if process > 0:
+            processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process))
+        else:
+            processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process))
+
+    processed_roi_image = GetImageFromArrayByImage(processed_roi, roi_image)
+    return processed_roi_image
+
 
 def GetImageFromArrayByImage(show_data, refer_image):
     data = np.transpose(show_data, (2, 0, 1))
@@ -39,6 +72,21 @@ def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\
 
         cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
         os.system(cmd)
+
+def GetPatientIDfromDicomFolder(dicom_folder):
+    file_list = os.listdir(dicom_folder)
+    if len(file_list) == 0:
+        print('No dicom file')
+        return None
+
+    for file in file_list:
+        if not os.path.isfile(os.path.join(dicom_folder, file)):
+            print('There is other file!')
+            return None
+
+    one_file = os.path.join(dicom_folder, file_list[0])
+    dcm = pydicom.dcmread(one_file)
+    return dcm.PatientID
 
 ################################################################################
 def ResizeSipmleITKImage(image, expected_resolution=[], expected_shape=[], method=sitk.sitkBSpline, dtype=sitk.sitkFloat32):
@@ -247,6 +295,58 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
 
     if os.path.exists(temp_folder):
         shutil.rmtree(temp_folder)
+
+def FindNfitiDWIConfigFile(file_path, is_allow_vec_missing=True):
+    file_name = os.path.splitext(file_path)[0]
+
+    dwi_file = file_name + '.nii'
+    dwi_bval_file = file_name + '.bval'
+    dwi_vec_file = file_name + '.bvec'
+
+    if os.path.exists(dwi_file) and os.path.exists(dwi_bval_file):
+        if os.path.exists(dwi_vec_file):
+            return dwi_file, dwi_bval_file, dwi_vec_file
+        else:
+            if is_allow_vec_missing:
+                return dwi_file, dwi_bval_file, ''
+            else:
+                print('Check these files')
+                return '', '', ''
+    else:
+        print('Check these files')
+        return '', '', ''
+
+def SeparateNfitiDWIFile(dwi_file_path, ref_image_path, specific_bvalue=-1, tol=200):
+    dwi_file, dwi_bval_file, _ = FindNfitiDWIConfigFile(dwi_file_path)
+    if dwi_bval_file and dwi_bval_file:
+        dwi_image = sitk.ReadImage(dwi_file)
+        ref_image = sitk.ReadImage(ref_image_path)
+
+        with open(dwi_bval_file, 'r') as b_file:
+            bvalue_list = b_file.read().split(' ')
+        bvalue_list[-1] = bvalue_list[-1][:-1]
+
+        dwi_data = sitk.GetArrayFromImage(dwi_image)
+
+        dwi_list = []
+        for index in range(len(bvalue_list)):
+            temp_data = dwi_data[index, ...]
+            temp_image = sitk.GetImageFromArray(temp_data)
+            temp_image.CopyInformation(ref_image)
+            dwi_list.append(temp_image)
+
+        if specific_bvalue < 0:
+            for b, dwi_image in zip(bvalue_list, dwi_list):
+                store_path = os.path.splitext(dwi_file)[0] + '_b' + b + '.nii'
+                sitk.WriteImage(dwi_image, store_path)
+        else:
+            diff = abs(np.array(list(map(int, bvalue_list))) - specific_bvalue)
+            if min(diff) > tol:
+                return
+            else:
+                index = np.argmin(diff)
+                store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
+                sitk.WriteImage(dwi_list[index], store_path)
 
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):

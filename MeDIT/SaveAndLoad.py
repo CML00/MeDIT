@@ -13,6 +13,12 @@ from MeDIT.ImageProcess import GetImageFromArrayByImage
 
 from MeDIT.Normalize import Normalize01
 
+def FilePathSplitext(file_path):
+    if file_path[-7:] == '.nii.gz':
+        return file_path[:-7], '.nii.gz'
+    else:
+        return os.path.splitext(file_path)
+
 def LoadCSVwithChineseInPandas(file_path, **kwargs):
     return pd.read_csv(file_path, encoding="gbk", **kwargs)
 
@@ -156,7 +162,7 @@ def SaveSiemens2DDicomSeries(array, dicom_folder, store_folder):
         ds.PixelData = array[..., sort_index_list[store_index]].tostring()
         ds.save_as(os.path.join(store_folder, str(store_index) + '.dcm'))
 
-def GetDicomData(data_path):
+def LoadDicomData(data_path):
     ds = pydicom.dcmread(data_path)
     data = ds.pixel_array
 
@@ -165,7 +171,7 @@ def GetDicomData(data_path):
 def SaveAsGif(image_list, store_path, duration=1):
     gif = []
     for image in image_list:
-        gif.append(deepcopy(image))
+        gif.append(np.asarray(deepcopy(image), dtype=np.uint8))
 
     imageio.mimsave(store_path, gif, duration=duration)
 
@@ -503,5 +509,32 @@ def read_roi_zip(zip_path):
         rois.update(read_roi_file(zf.open(n)))
     return rois
 
+def GenerateROIFromSPIN(tob_file_path, ref_image):
+    '''
+    This function was to read .tob file, which was designed by SPIN, MRInnovation, (by Dr. Haacke, Ying Wang.)
+    :param tob_file_path: The file with '.tob'
+    :param ref_image: The reference image, which provided the shape of the image
+    :return: The generated ROI. Different cores was assigned to different values. The first 2 dimensions were swapped for visualization.
+     By Jie Wu, Nov-11-18
+    '''
+    if isinstance(ref_image, str):
+        ref_image = sitk.ReadImage(ref_image)
 
+    image_shape = ref_image.GetSize()[0:3]
+    recon_data = np.zeros(image_shape)
 
+    index_list = np.fromfile(tob_file_path, dtype=np.uint32)
+
+    total_roi = index_list[1]
+    roi_number_index = 2
+    for roi_index in range(total_roi):
+        roi_point_number = index_list[roi_number_index] // 4
+        print('The number of array: ', roi_point_number)
+        for roi_point_index in range(1, roi_point_number):
+            recon_data[index_list[roi_number_index + roi_point_index * 4 + 1],
+                       index_list[roi_number_index + roi_point_index * 4 + 2],
+                       index_list[roi_number_index + roi_point_index * 4 + 3]] = roi_index + 1
+        roi_number_index += roi_point_number * 4 + 1
+
+    recon_data = np.swapaxes(recon_data, 0, 1)
+    return recon_data

@@ -205,7 +205,7 @@ def FlattenImages(data_list, is_show=True):
 
         if is_show:
             Imshow3DArray(Normalize01(imshow_data), cmap='gray')
-            
+
         return imshow_data
 
 def FlattenAllSlices(data, is_show=True):

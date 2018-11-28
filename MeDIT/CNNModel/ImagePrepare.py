@@ -81,7 +81,7 @@ class ImagePrepare:
             else:
                 self._center_point.append(int(center_point[index] * raw_resolution[index] / target_resolution[index]))
 
-        new_data = nd.interpolation.zoom(new_data, raw_resolution / target_resolution)
+        new_data = nd.interpolation.zoom(new_data, raw_resolution / target_resolution, order=3)
         new_data_shape = np.shape(new_data)
         self._log[0:3] = new_data_shape
         # final_data_shape = [self._config['input_x'], self._config['input_y'], self._config['input_z']]
