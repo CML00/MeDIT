@@ -9,7 +9,7 @@ from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
 def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     # Dilate or erode the roi image.
-    roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
+    _,roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
     if roi.ndim != 3:
         print('Only process on 3D data.')
         return
@@ -20,7 +20,7 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     if is_2d:
         kernel = np.ones((3, 3))
         processed_roi = np.zeros_like(roi)
-        for slice_index in range(roi.shape):
+        for slice_index in range(roi.shape[2]):
             slice = roi[..., slice_index]
             if np.max(slice) == 0:
                 continue
@@ -36,6 +36,9 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
             processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process))
 
     processed_roi_image = GetImageFromArrayByImage(processed_roi, roi_image)
+
+    if store_path:
+        sitk.WriteImage(processed_roi_image, store_path)
     return processed_roi_image
 
 
