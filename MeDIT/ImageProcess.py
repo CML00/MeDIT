@@ -9,7 +9,7 @@ from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
 def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     # Dilate or erode the roi image.
-    _,roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
+    _, roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
     if roi.ndim != 3:
         print('Only process on 3D data.')
         return
@@ -25,15 +25,15 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
             if np.max(slice) == 0:
                 continue
             if process > 0:
-                processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process))
+                processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
             else:
-                processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process))
+                processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
     else:
         kernel = np.ones((3, 3, 3))
         if process > 0:
-            processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process))
+            processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
         else:
-            processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process))
+            processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
 
     processed_roi_image = GetImageFromArrayByImage(processed_roi, roi_image)
 
