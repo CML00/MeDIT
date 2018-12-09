@@ -13,6 +13,12 @@ from MeDIT.ImageProcess import GetImageFromArrayByImage
 
 from MeDIT.Normalize import Normalize01
 
+def FilePathSplitext(file_path):
+    if file_path[-7:] == '.nii.gz':
+        return file_path[:-7], '.nii.gz'
+    else:
+        return os.path.splitext(file_path)
+
 def LoadCSVwithChineseInPandas(file_path, **kwargs):
     return pd.read_csv(file_path, encoding="gbk", **kwargs)
 
@@ -156,7 +162,7 @@ def SaveSiemens2DDicomSeries(array, dicom_folder, store_folder):
         ds.PixelData = array[..., sort_index_list[store_index]].tostring()
         ds.save_as(os.path.join(store_folder, str(store_index) + '.dcm'))
 
-def GetDicomData(data_path):
+def LoadDicomData(data_path):
     ds = pydicom.dcmread(data_path)
     data = ds.pixel_array
 
