@@ -148,7 +148,7 @@ class CST2AdcDwiDetect():
                 pred_output = os.path.join(store_folder, 'CS_PCa_Pred.nii.gz')
                 SaveNiiImage(pred_output, pred_image)
 
-        return mask_image, mask
+        return pred, pred_image, mask, mask_image
 
 class CST2AdcDwiProstateRoiDetect():
     def __init__(self):
@@ -285,9 +285,9 @@ class CST2AdcDwiProstateRoiDetect():
         pred_image = GetImageFromArrayByImage(pred, t2_image)
         if store_folder:
             if os.path.isdir(store_folder):
-                roi_output = os.path.join(store_folder, 'CS_PCa_ROI.nii.gz')
+                roi_output = os.path.join(store_folder, 'CS_PCa_ROI_Prsotate_ROI_Constrain.nii.gz')
                 SaveNiiImage(roi_output, mask_image)
-                pred_output = os.path.join(store_folder, 'CS_PCa_Pred.nii.gz')
+                pred_output = os.path.join(store_folder, 'CS_PCa_Pred_ROI_Constrain.nii.gz')
                 SaveNiiImage(pred_output, pred_image)
 
         return pred, pred_image, mask, mask_image
@@ -410,9 +410,9 @@ class CST2AdcDwiDetect2_5D():
         pred_image = GetImageFromArrayByImage(pred, t2_image)
         if store_folder:
             if os.path.isdir(store_folder):
-                roi_output = os.path.join(store_folder, 'CS_PCa_ROI.nii.gz')
+                roi_output = os.path.join(store_folder, 'CS_PCa_25_ROI_25.nii.gz')
                 SaveNiiImage(roi_output, mask_image)
-                pred_output = os.path.join(store_folder, 'CS_PCa_Pred.nii.gz')
+                pred_output = os.path.join(store_folder, 'CS_PCa_Pred_25.nii.gz')
                 SaveNiiImage(pred_output, pred_image)
 
         return pred, pred_image, mask, mask_image
