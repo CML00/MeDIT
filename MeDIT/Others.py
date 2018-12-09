@@ -85,6 +85,21 @@ def HumanSortFile(file_list):
     file_list.sort(key=alphanum_key)
     return file_list
 
+def CompareSimilarityOfLists(*input_lists):
+    if len(input_lists) < 2:
+        print('At least 2 lists')
+
+    max_diff = -1.
+    for one in input_lists:
+        for second in input_lists[input_lists.index(one) + 1:]:
+            one_array = np.asarray(one)
+            second_array = np.asarray(second)
+            diff = np.sqrt(np.sum(np.square(one_array - second_array)))
+            if diff > max_diff:
+                max_diff = diff
+
+    return max_diff
+
 if __name__ == '__main__':
     # array = np.array([1, 'z', 2.5, 1e-4, np.nan, '3'])
     # for index in np.arange(array.size):

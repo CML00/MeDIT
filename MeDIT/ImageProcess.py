@@ -261,7 +261,6 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     file_name, suffex = os.path.splitext(moving_image_path)
 
     temp_folder = os.path.join(transform_folder, 'temp')
-
     try:
         os.mkdir(temp_folder)
     except:
