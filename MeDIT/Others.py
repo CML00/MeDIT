@@ -85,6 +85,12 @@ def HumanSortFile(file_list):
     file_list.sort(key=alphanum_key)
     return file_list
 
+def SplitPathWithSuffex(file_path):
+    if file_path.endswith('.nii.gz'):
+        return file_path[:-len('.nii.gz')], '.nii.gz'
+    else:
+        return os.path.splitext(file_path)
+
 def CompareSimilarityOfLists(*input_lists):
     if len(input_lists) < 2:
         print('At least 2 lists')

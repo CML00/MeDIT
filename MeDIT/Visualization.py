@@ -354,7 +354,7 @@ def ShowColorByROI(background_array, fore_array, roi, threshold_value = 1e-6, co
     if is_show:
         plt.show()
 
-def Imshow3DArray(data, ROI=None, window_size=[800, 800]):
+def Imshow3DArray(data, ROI=None, window_size=[800, 800], window_name='Imshow3D'):
     '''
     Imshow 3D Array, the dimension is row x col x slice. If the ROI was combined in the data, the dimension is:
     slice x row x col x color
@@ -375,7 +375,7 @@ def Imshow3DArray(data, ROI=None, window_size=[800, 800]):
     imv = pg.ImageView()
     win.setCentralWidget(imv)
     win.show()
-    win.setWindowTitle('Imshow3D')
+    win.setWindowTitle(window_name)
 
     imv.setImage(data)
     app.exec_()
