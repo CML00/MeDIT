@@ -55,7 +55,23 @@ def LoadH5(data_path, tag, data_type=np.float32):
     file.close()
     return data
 
-def LoadH5Info(data_path):
+def LoadH5InfoForGenerate(data_path):
+    file = h5py.File(data_path, 'r')
+    info = {'input_number': 0, 'output_number': 0}
+    key_list = []
+    for key in file.keys():
+        key_list.append(key)
+        input_output, current_number = key.split('_')
+        if input_output == 'input':
+            info['input_number'] = np.max([int(current_number) + 1, info['input_number']])
+        elif input_output == 'output':
+            info['output_number'] = np.max([int(current_number) + 1, info['output_number']])
+        else:
+            print('Error:', data_path)
+
+    return info
+
+def LoadKerasWeightH5Info(data_path):
     '''
     Load the h5file and print all the weights.
     :param data_path: the path of the h5 file.

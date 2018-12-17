@@ -9,6 +9,9 @@ from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
 def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     # Dilate or erode the roi image.
+    # If the type of process is int, it denotes the voxel unit.
+    # If the type of process is float, it denotes the percentage unit.
+
     _, roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
     if roi.ndim != 3:
         print('Only process on 3D data.')
@@ -17,23 +20,57 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
         print('Not valid ROI!')
         return
 
-    if is_2d:
-        kernel = np.ones((3, 3))
-        processed_roi = np.zeros_like(roi)
-        for slice_index in range(roi.shape[2]):
-            slice = roi[..., slice_index]
-            if np.max(slice) == 0:
-                continue
-            if process > 0:
-                processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
-            else:
-                processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
-    else:
-        kernel = np.ones((3, 3, 3))
-        if process > 0:
-            processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+    if isinstance(process, int):
+        if is_2d:
+            kernel = np.ones((3, 3))
+            processed_roi = np.zeros_like(roi)
+            for slice_index in range(roi.shape[2]):
+                slice = roi[..., slice_index]
+                if np.max(slice) == 0:
+                    continue
+                if process > 0:
+                    processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
+                else:
+                    processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
         else:
-            processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+            kernel = np.ones((3, 3, 3))
+            if process > 0:
+                processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+            else:
+                processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+    elif isinstance(process, float):
+        if is_2d:
+            kernel = np.ones((3, 3))
+            processed_roi = deepcopy(roi)
+            for slice_index in range(roi.shape[2]):
+                slice = deepcopy(roi[..., slice_index])
+                if np.max(slice) == 0:
+                    continue
+
+                if np.abs(process) > 1e-6:
+                    processed_roi[..., slice_index] = deepcopy(roi[..., slice_index])
+                elif process > 0.0:
+                    while np.sum(processed_roi[..., slice_index]) / np.sum(slice) < 1 + process:
+                        processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=1).astype(roi.dtype)
+                else:
+                    while np.sum(processed_roi[..., slice_index]) / np.sum(slice) > 1 + process:
+                        processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=1).astype(roi.dtype)
+        else:
+            kernel = np.ones((3, 3, 3))
+            processed_roi = deepcopy(roi)
+            if np.abs(process) < 1e-6:
+                processed_roi = deepcopy(roi)
+            elif process > 1e-6:
+                while np.sum(processed_roi) / np.sum(roi) < 1 + process:
+                    processed_roi = binary_dilation(roi, kernel, iterations=1).astype(roi.dtype)
+            else:
+                while np.sum(processed_roi) / np.sum(roi) > 1 + process:
+                    processed_roi = binary_erosion(roi, kernel, iterations=1).astype(roi.dtype)
+    else:
+        processed_roi = roi
+        print('The type of the process is not in-valid.')
+        return sitk.Image()
+
 
     processed_roi_image = GetImageFromArrayByImage(processed_roi, roi_image)
 
@@ -264,7 +301,6 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     file_name, suffex = os.path.splitext(moving_image_path)
 
     temp_folder = os.path.join(transform_folder, 'temp')
-
     try:
         os.mkdir(temp_folder)
     except:

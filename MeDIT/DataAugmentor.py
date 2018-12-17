@@ -301,6 +301,9 @@ class DataAugmentor2D():
         return result
 
     def Execute(self, source_data, aug_parameter={}, interpolation_method='nearest', is_clear=False):
+        if np.max(source_data) < 1e-6:
+            return source_data
+
         if source_data.ndim != 2:
             print('Input the data with 2 dimensions!')
             return source_data

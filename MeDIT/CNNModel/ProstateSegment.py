@@ -124,7 +124,7 @@ class ProstateSegmentation2D:
                 store_folder = os.path.join(store_folder, 'prostate_roi.nii.gz')
             SaveNiiImage(store_folder, mask_image)
 
-        return mask_image, mask
+        return preds, mask, mask_image
 
 class ProstateSegmentation2_5D:
     def __init__(self):
@@ -248,24 +248,33 @@ class ProstateSegmentation2_5D:
         mask_image =  GetImageFromArrayByImage(mask, image)
         if store_folder:
             if os.path.isdir(store_folder):
-                store_folder = os.path.join(store_folder, 'prostate_roi.nii.gz')
+                store_folder = os.path.join(store_folder, 'prostate_roi_25D.nii.gz')
             SaveNiiImage(store_folder, mask_image)
 
-        return mask_image, mask
+        return preds, mask, mask_image
 
 def testSeg():
-    model_folder_path = r'z:\SuccessfulModel\ProstateSegment2_5'
-    prostate_segmentor = ProstateSegmentation2_5D()
+    model_folder_path = r'z:\SuccessfulModel\ProstateSegmentation'
+    prostate_segmentor = ProstateSegmentation2D()
     prostate_segmentor.LoadModel(model_folder_path)
 
+    import os
+    import glob
     from MeDIT.SaveAndLoad import LoadNiiData
-    image, _, show_data = LoadNiiData(r'z:\Data\CS_ProstateCancer_Detect_multicenter\JSPH_relabel\BXH^bian xiao hong ^^6875-49\t2.nii', dtype=np.float32, is_show_info=True)
+    root_folder = r'z:\Data\CS_ProstateCancer_Detect_multicenter\ToTest\Cui hai pei'
+    t2_candidate = glob.glob(os.path.join(root_folder, '*t2*tra*Resize.nii'))
+    if len(t2_candidate) != 1:
+        print('Check T2 Path')
+        return
+    t2_path = r'z:\temp_data\test_data_prostate\301_case2_1.2.840.113619.2.25.4.1415787.1457070159.316\004_AX T2 PROPELLER.nii'
+    image, _, show_data = LoadNiiData(t2_path, dtype=np.float32, is_show_info=True)
 
-    predict_image, prodict_data = prostate_segmentor.Run(image, model_folder_path)
+    predict_data, mask, mask_image = prostate_segmentor.Run(image, model_folder_path)
 
     from MeDIT.Visualization import Imshow3DArray
     from MeDIT.Normalize import Normalize01
-    Imshow3DArray(Normalize01(show_data), ROI=np.asarray(prodict_data > 0.5, dtype=np.uint8))
+    Imshow3DArray(predict_data)
+    Imshow3DArray(Normalize01(show_data), ROI=np.asarray(predict_data > 0.5, dtype=np.uint8))
 
 
 if __name__ == '__main__':

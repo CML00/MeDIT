@@ -307,7 +307,7 @@ def FusionImage(data, mask, is_show=False):
     fig.add_axes(ax)
 
     plt.imshow(data, cmap='gray')
-    plt.imshow(mask, cmap='hot', alpha=0.3)
+    plt.imshow(mask, cmap='rainbow', alpha=0.3)
 
     fig.subplots_adjust(bottom=0)
     fig.subplots_adjust(top=1)
@@ -323,22 +323,23 @@ def FusionImage(data, mask, is_show=False):
         os.remove('temp.jpg')
         return array
 
-def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
-    if array.shape != roi.shape:
+def ShowColorByROI(background_array, fore_array, roi, threshold_value = 1e-6, color_map='rainbow', store_path='', is_show=True):
+    if background_array.shape != roi.shape:
         print('Array and ROI must have same shape')
         return
 
-    array = Normalize01(array)
+    background_array = Normalize01(background_array)
+    fore_array = Normalize01(fore_array)
     cmap = plt.get_cmap(color_map)
-    rgba_array = cmap(array)
+    rgba_array = cmap(fore_array)
     rgb_array = np.delete(rgba_array, 3, 2)
 
-    print(array.shape)
+    print(background_array.shape)
     print(rgb_array.shape)
 
-    index_roi_x, index_roi_y = np.where(roi == 0)
+    index_roi_x, index_roi_y = np.where(roi < threshold_value)
     for index_x, index_y in zip(index_roi_x, index_roi_y):
-        rgb_array[index_x, index_y, :] = array[index_x, index_y]
+        rgb_array[index_x, index_y, :] = background_array[index_x, index_y]
 
     plt.imshow(rgb_array)
     plt.axis('off')
@@ -353,7 +354,7 @@ def ShowColorByROI(array, roi, color_map='jet', store_path='', is_show=True):
     if is_show:
         plt.show()
 
-def Imshow3DArray(data, ROI=None, window_size=[800, 800]):
+def Imshow3DArray(data, ROI=None, window_size=[800, 800], window_name='Imshow3D'):
     '''
     Imshow 3D Array, the dimension is row x col x slice. If the ROI was combined in the data, the dimension is:
     slice x row x col x color
@@ -374,8 +375,45 @@ def Imshow3DArray(data, ROI=None, window_size=[800, 800]):
     imv = pg.ImageView()
     win.setCentralWidget(imv)
     win.show()
-    win.setWindowTitle('Imshow3D')
+    win.setWindowTitle(window_name)
 
     imv.setImage(data)
     app.exec_()
+
+def CheckROIForSeries(root_folder, store_folder, key, roi_key):
+    import glob
+    from scipy.misc import imsave
+    from MeDIT.SaveAndLoad import LoadNiiData, SaveArrayAsGreyImage
+
+    for case in os.listdir(root_folder):
+        case_folder = os.path.join(root_folder, case)
+        if not os.path.isdir(case_folder):
+            continue
+
+        print(case)
+        key_path = glob.glob(os.path.join(case_folder, key))
+        if len(key_path) != 1:
+            print('More Key Image: ', case)
+            continue
+        image, _, data = LoadNiiData(key_path[0])
+        show_data = FlattenAllSlices(data, is_show=False)
+
+        show_roi_list = []
+        roi_path_list = glob.glob(os.path.join(case_folder, roi_key))
+        if len(roi_path_list) == 0:
+            print('No ROI Image: ', case)
+            continue
+        for roi_path in roi_path_list:
+            _, _, roi = LoadNiiData(roi_path, dtype=np.uint8)
+            show_roi = FlattenAllSlices(roi, is_show=False)
+            if show_data.shape != show_roi.shape:
+                print('Data and ROI are not consistent: ', case)
+            show_roi_list.append(show_roi)
+
+        merge_data = MergeImageWithROI(show_data, show_roi_list)
+
+        store_path = os.path.join(store_folder, case + '.jpg')
+        imsave(store_path, merge_data)
+
+
 
