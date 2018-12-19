@@ -47,14 +47,14 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
                 if np.max(slice) == 0:
                     continue
 
-                if np.abs(process) > 1e-6:
+                if np.abs(process) < 1e-6:
                     processed_roi[..., slice_index] = deepcopy(roi[..., slice_index])
-                elif process > 0.0:
+                elif process > 1e-6:
                     while np.sum(processed_roi[..., slice_index]) / np.sum(slice) < 1 + process:
                         processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=1).astype(roi.dtype)
                 else:
                     while np.sum(processed_roi[..., slice_index]) / np.sum(slice) > 1 + process:
-                        processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=1).astype(roi.dtype)
+                        processed_roi[..., slice_index] = binary_erosion(processed_roi[..., slice_index], kernel, iterations=1).astype(roi.dtype)
         else:
             kernel = np.ones((3, 3, 3))
             processed_roi = deepcopy(roi)
@@ -65,7 +65,7 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
                     processed_roi = binary_dilation(roi, kernel, iterations=1).astype(roi.dtype)
             else:
                 while np.sum(processed_roi) / np.sum(roi) > 1 + process:
-                    processed_roi = binary_erosion(roi, kernel, iterations=1).astype(roi.dtype)
+                    processed_roi = binary_erosion(processed_roi, kernel, iterations=1).astype(roi.dtype)
     else:
         processed_roi = roi
         print('The type of the process is not in-valid.')
