@@ -29,5 +29,30 @@ def FindROICorrespondingFile(roi_path, given_suffex=''):
 
 
 if __name__ == '__main__':
-    a = FindROICorrespondingFile(r'd:\USB Copy_2018-12-07_140325\Chen Bing Lou\MR\20180912\170329\7830\004_t2_fse_tra_roi2.csv')
-    print(a)
+    # a = FindROICorrespondingFile(r'd:\USB Copy_2018-12-07_140325\Chen Bing Lou\MR\20180912\170329\7830\004_t2_fse_tra_roi2.csv')
+    # print(a)
+
+    case_folder = r'w:\JSPH\ProstateCancer\2017Year\CheckAndWork\BSZ^bi shu zhong'
+    key_word = ['t2']
+    suffex = ['.nii']
+    exclude = ['roi']
+
+    from MeDIT.PreProcess.ExtractValidNiiPath import ExtractValidPath
+    evp = ExtractValidPath()
+    evp.case_folder = case_folder
+    print(evp.GetManufacturer())
+    print(evp.GetPatientID())
+    temp = evp.GetPath(key_word, exclude_key=exclude, suffex=suffex)
+    print(temp)
+
+    # import os
+    #
+    # candiate_file = []
+    # for root, folder, files in os.walk(case_folder):
+    #     if len(files) > 0:
+    #         candiate_file.extend([os.path.join(root, temp) for temp in files if temp.endswith('.nii')])
+    #
+    #
+    # print(candiate_file)
+
+

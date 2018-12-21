@@ -103,12 +103,13 @@ def GenerateFileName(file_path, name):
 
     return store_path
 
-def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
+def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"D:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
     file_list = os.listdir(data_folder)
     file_list.sort()
     for file in file_list:
         file_path = os.path.join(data_folder, file)
-        store_file = os.path.join(store_folder, file+'.IMA')
+        # store_file = os.path.join(store_folder, file+'.IMA')
+        store_file = os.path.join(store_folder, file)
 
         cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
         os.system(cmd)
