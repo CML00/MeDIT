@@ -2,6 +2,16 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from collections import OrderedDict
 
+random_2d_augment = {
+    'stretch_x': 0.1,
+    'stretch_y': 0.1,
+    'shear': 0.1,
+    'shift_x': 4,
+    'shift_y': 4,
+    'rotate_z_angle': 20,
+    'horizontal_flip': True
+}
+
 class AugmentParametersGenerator():
     '''
     To generate random parameters for 2D or 3D numpy array transform.
@@ -342,12 +352,5 @@ def main():
     #     new_roi = aug_generator.Execute(roi, interpolation_method='nearest')
     #     DrawBoundaryOfBinaryMask(Normalize01(new_data), new_roi)
 
-def Test2D():
-    import numpy as np
-    data = np.reshape(np.arange(144), (12, 12))
-    data_augmentor = DataAugmentor2D()
-    result = data_augmentor.Execute(data, aug_parameter={'stretch_x': 0.5}, interpolation_method='linear')
-    print(result)
-
 if __name__ == '__main__':
-    Test2D()
+    main()

@@ -162,13 +162,12 @@ def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_sha
     sitk.WriteImage(resized_image, store_path)
     return resized_image
 
-def ResizeROINiiFile(file_path, store_path='', expected_resolution=[], expected_shape=[]):
-    expected_resolution = deepcopy(expected_resolution)
-    expected_shape = deepcopy(expected_shape)
+def ResizeROINiiFile(file_path, ref_image, store_path=''):
+    expected_shape = ref_image.GetSize()
     if not store_path:
         store_path = GenerateFileName(file_path, 'Resize')
     image = sitk.ReadImage(file_path)
-    resized_image = ResizeSipmleITKImage(image, expected_resolution, expected_shape, method=sitk.sitkLinear, dtype=sitk.sitkFloat32)
+    resized_image = ResizeSipmleITKImage(image, expected_shape=expected_shape, method=sitk.sitkLinear, dtype=sitk.sitkFloat32)
     data = sitk.GetArrayFromImage(resized_image)
 
     new_data = np.zeros(data.shape, dtype=np.uint8)

@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
 from scipy import ndimage
@@ -177,7 +178,7 @@ def ExtractPatch(image, patch_size, center_point=[-1, -1], is_shift=True):
     patch_row_index = [center_point[0] - patch_size[0] // 2, center_point[0] + patch_size[0] - patch_size[0] // 2]
     patch_col_index = [center_point[1] - patch_size[1] // 2, center_point[1] + patch_size[1] - patch_size[1] // 2]
 
-    patch = image[patch_row_index[0]:patch_row_index[1], patch_col_index[0]:patch_col_index[1]]
+    patch = deepcopy(image[patch_row_index[0]:patch_row_index[1], patch_col_index[0]:patch_col_index[1]])
     return patch, [patch_row_index, patch_col_index]
 
 def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
@@ -260,7 +261,7 @@ def ExtractBlock(image, patch_size, center_point=[-1, -1, -1], is_shift=False):
     block_col_index = [center_point[1] - patch_size[1] // 2, center_point[1] + patch_size[1] - patch_size[1] // 2]
     block_slice_index = [center_point[2] - patch_size[2] // 2, center_point[2] + patch_size[2] - patch_size[2] // 2]
 
-    block = image[block_row_index[0]:block_row_index[1], block_col_index[0]:block_col_index[1], block_slice_index[0]:block_slice_index[1]]
+    block = deepcopy(image[block_row_index[0]:block_row_index[1], block_col_index[0]:block_col_index[1], block_slice_index[0]:block_slice_index[1]])
     return block, [block_row_index, block_col_index, block_slice_index]
 
 def Crop2DImage(image, shape):
@@ -355,7 +356,6 @@ def Crop3DImage(image, shape):
             new_image[:, :, center - image.shape[2] // 2: center + image.shape[2] // 2] = image
         else:
             new_image[:, :, center - image.shape[2] // 2 - 1: center + image.shape[2] // 2] = image
-
 
     return new_image
 
