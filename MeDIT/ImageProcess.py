@@ -9,6 +9,9 @@ from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
 def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     # Dilate or erode the roi image.
+    # If the type of process is int, it denotes the voxel unit.
+    # If the type of process is float, it denotes the percentage unit.
+
     _, roi = GetDataFromSimpleITK(roi_image, dtype=np.uint8)
     if roi.ndim != 3:
         print('Only process on 3D data.')
@@ -17,23 +20,57 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
         print('Not valid ROI!')
         return
 
-    if is_2d:
-        kernel = np.ones((3, 3))
-        processed_roi = np.zeros_like(roi)
-        for slice_index in range(roi.shape[2]):
-            slice = roi[..., slice_index]
-            if np.max(slice) == 0:
-                continue
-            if process > 0:
-                processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
-            else:
-                processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
-    else:
-        kernel = np.ones((3, 3, 3))
-        if process > 0:
-            processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+    if isinstance(process, int):
+        if is_2d:
+            kernel = np.ones((3, 3))
+            processed_roi = np.zeros_like(roi)
+            for slice_index in range(roi.shape[2]):
+                slice = roi[..., slice_index]
+                if np.max(slice) == 0:
+                    continue
+                if process > 0:
+                    processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
+                else:
+                    processed_roi[..., slice_index] = binary_erosion(slice, kernel, iterations=np.abs(process)).astype(roi.dtype)
         else:
-            processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+            kernel = np.ones((3, 3, 3))
+            if process > 0:
+                processed_roi = binary_dilation(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+            else:
+                processed_roi = binary_erosion(roi, kernel, iterations=np.abs(process)).astype(roi.dtype)
+    elif isinstance(process, float):
+        if is_2d:
+            kernel = np.ones((3, 3))
+            processed_roi = deepcopy(roi)
+            for slice_index in range(roi.shape[2]):
+                slice = deepcopy(roi[..., slice_index])
+                if np.max(slice) == 0:
+                    continue
+
+                if np.abs(process) < 1e-6:
+                    processed_roi[..., slice_index] = deepcopy(roi[..., slice_index])
+                elif process > 1e-6:
+                    while np.sum(processed_roi[..., slice_index]) / np.sum(slice) < 1 + process:
+                        processed_roi[..., slice_index] = binary_dilation(slice, kernel, iterations=1).astype(roi.dtype)
+                else:
+                    while np.sum(processed_roi[..., slice_index]) / np.sum(slice) > 1 + process:
+                        processed_roi[..., slice_index] = binary_erosion(processed_roi[..., slice_index], kernel, iterations=1).astype(roi.dtype)
+        else:
+            kernel = np.ones((3, 3, 3))
+            processed_roi = deepcopy(roi)
+            if np.abs(process) < 1e-6:
+                processed_roi = deepcopy(roi)
+            elif process > 1e-6:
+                while np.sum(processed_roi) / np.sum(roi) < 1 + process:
+                    processed_roi = binary_dilation(roi, kernel, iterations=1).astype(roi.dtype)
+            else:
+                while np.sum(processed_roi) / np.sum(roi) > 1 + process:
+                    processed_roi = binary_erosion(processed_roi, kernel, iterations=1).astype(roi.dtype)
+    else:
+        processed_roi = roi
+        print('The type of the process is not in-valid.')
+        return sitk.Image()
+
 
     processed_roi_image = GetImageFromArrayByImage(processed_roi, roi_image)
 
@@ -66,12 +103,13 @@ def GenerateFileName(file_path, name):
 
     return store_path
 
-def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"C:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
+def DecompressSiemensDicom(data_folder, store_folder, gdcm_path=r"D:\MyCode\Lib\gdcm\GDCMGITBin\bin\Release\gdcmconv.exe"):
     file_list = os.listdir(data_folder)
     file_list.sort()
     for file in file_list:
         file_path = os.path.join(data_folder, file)
-        store_file = os.path.join(store_folder, file+'.IMA')
+        # store_file = os.path.join(store_folder, file+'.IMA')
+        store_file = os.path.join(store_folder, file)
 
         cmd = gdcm_path + " --raw {:s} {:s}".format(file_path, store_file)
         os.system(cmd)

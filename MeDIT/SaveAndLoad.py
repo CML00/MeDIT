@@ -20,7 +20,10 @@ def FilePathSplitext(file_path):
         return os.path.splitext(file_path)
 
 def LoadCSVwithChineseInPandas(file_path, **kwargs):
-    return pd.read_csv(file_path, encoding="gbk", **kwargs)
+    if 'encoding' not in kwargs.keys():
+        return pd.read_csv(file_path, encoding="gbk", **kwargs)
+    else:
+        return pd.read_csv(file_path, **kwargs)
 
 def SaveArrayAsGreyImage(array, store_path, roi=0, dip=300):
     # image = Normalize01(image)
