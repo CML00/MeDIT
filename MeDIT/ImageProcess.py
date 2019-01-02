@@ -4,6 +4,7 @@ import os
 import shutil
 import SimpleITK as sitk
 import numpy as np
+import nibabel as nb
 from copy import deepcopy
 from scipy.ndimage.morphology import binary_dilation, binary_erosion
 
@@ -77,7 +78,6 @@ def ProcessROIImage(roi_image, process, store_path='', is_2d=True):
     if store_path:
         sitk.WriteImage(processed_roi_image, store_path)
     return processed_roi_image
-
 
 def GetImageFromArrayByImage(show_data, refer_image):
     data = np.transpose(show_data, (2, 0, 1))
@@ -356,37 +356,52 @@ def FindNfitiDWIConfigFile(file_path, is_allow_vec_missing=True):
         print('Check these files')
         return '', '', ''
 
-def SeparateNfitiDWIFile(dwi_file_path, ref_image_path, specific_bvalue=-1, tol=200):
+def SeparateNfitiDWIFile(dwi_file_path):
     dwi_file, dwi_bval_file, _ = FindNfitiDWIConfigFile(dwi_file_path)
-    if dwi_bval_file and dwi_bval_file:
-        dwi_image = sitk.ReadImage(dwi_file)
-        ref_image = sitk.ReadImage(ref_image_path)
+    if dwi_file and dwi_bval_file:
+        dwi_4d = nb.load(dwi_file)
 
         with open(dwi_bval_file, 'r') as b_file:
             bvalue_list = b_file.read().split(' ')
         bvalue_list[-1] = bvalue_list[-1][:-1]
 
-        dwi_data = sitk.GetArrayFromImage(dwi_image)
 
-        dwi_list = []
-        for index in range(len(bvalue_list)):
-            temp_data = dwi_data[index, ...]
-            temp_image = sitk.GetImageFromArray(temp_data)
-            temp_image.CopyInformation(ref_image)
-            dwi_list.append(temp_image)
+        dwi_list = nb.funcs.four_to_three(dwi_4d)
+        if len(dwi_list) != len(bvalue_list):
+            print('The list of the b values is not consistant to the dwi list')
+            return
 
-        if specific_bvalue < 0:
-            for b, dwi_image in zip(bvalue_list, dwi_list):
-                store_path = os.path.splitext(dwi_file)[0] + '_b' + b + '.nii'
-                sitk.WriteImage(dwi_image, store_path)
-        else:
-            diff = abs(np.array(list(map(int, bvalue_list))) - specific_bvalue)
-            if min(diff) > tol:
-                return
+        for one_dwi, one_b in zip(dwi_list, bvalue_list):
+            store_path = os.path.splitext(dwi_file)[0] + '_b' + one_b + '.nii'
+            nb.save(one_dwi, store_path)
+
+def FindTargetBvalue(candidate_list):
+    b_value = []
+    for file in candidate_list:
+        b_str = ''
+        index = -5
+        while True:
+            if file[index].isdigit():
+                b_str = file[index] + b_str
             else:
-                index = np.argmin(diff)
-                store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
-                sitk.WriteImage(dwi_list[index], store_path)
+                b_value.append(int(b_str))
+                break
+            index -= 1
+
+    return b_value
+
+        # if specific_bvalue < 0:
+        #     for b, dwi_image in zip(bvalue_list, dwi_list):
+        #         store_path = os.path.splitext(dwi_file)[0] + '_b' + b + '.nii'
+        #         sitk.WriteImage(dwi_image, store_path)
+        # else:
+        #     diff = abs(np.array(list(map(int, bvalue_list))) - specific_bvalue)
+        #     if min(diff) > tol:
+        #         return
+        #     else:
+        #         index = np.argmin(diff)
+        #         store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
+        #         sitk.WriteImage(dwi_list[index], store_path)
 
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):
