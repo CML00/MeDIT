@@ -402,6 +402,13 @@ def FindTargetBvalue(candidate_list):
         #         store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
         #         sitk.WriteImage(dwi_list[index], store_path)
 
+def FindseparatedDWIFile(candidate_list):
+    dwi_list = []
+    for dwi in candidate_list:
+        if ('dwi' in dwi) or ('diff' in dwi) and ('_b' in dwi) and (('.nii' in dwi) or ('.nii.gz' in dwi)):
+            dwi_list.append(dwi)
+    return dwi_list
+
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):
 #     if isinstance(adc_image, str):
