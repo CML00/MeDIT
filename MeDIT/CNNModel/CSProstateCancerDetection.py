@@ -419,7 +419,7 @@ class CST2AdcDwiDetect2_5D():
 
 def testDetect():
     # model_folder_path = r'C:\MyCode\MPApp\DPmodel\CSPCaDetection'
-    model_folder_path = r'z:\SuccessfulModel\PCaDetection2_5'
+    model_folder_path = r'Z:\SuccessfulModel\PCaDetection25_2'
     # pca_detect = CST2AdcDwiProstateRoiDetect()
     pca_detect = CST2AdcDwiDetect2_5D()
     pca_detect.LoadModel(model_folder_path)
