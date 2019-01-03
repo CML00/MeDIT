@@ -201,6 +201,8 @@ def ResizeNiiFile(file_path, store_path='', expected_resolution=[], expected_sha
     return resized_image
 
 def ResizeROINiiFile(file_path, ref_image, store_path=''):
+    if isinstance(ref_image, str):
+        ref_image = sitk.ReadImage(ref_image)
     expected_shape = ref_image.GetSize()
     if not store_path:
         store_path = GenerateFileName(file_path, 'Resize')
@@ -267,7 +269,9 @@ def RegistrateNiiFile(fixed_image_path, moving_image_path, interpolation_method=
     store_path = GenerateFileName(moving_image_path, 'Reg')
     sitk.WriteImage(output_image, store_path)
 
-def GetTransformByElastix(elastix_folder, fix_image_path, moving_image_path, output_folder, parameter_folder):
+def GetTransformByElastix(fix_image_path, moving_image_path, output_folder,
+                          elastix_folder=r'c:\MyCode\MPApp\Elastix',
+                          parameter_folder=r'c:\MyCode\MPApp\Elastix\RegParam\3ProstateBspline16'):
     '''
     Get registed transform by Elastix. This is depended on the Elastix.
 
@@ -289,7 +293,7 @@ def GetTransformByElastix(elastix_folder, fix_image_path, moving_image_path, out
         cmd += r' -p "' + abs_file_path + '"'
     os.system(cmd)
 
-def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
+def RegisteByElastix(moving_image_path, transform_folder, elastix_folder=r'c:\MyCode\MPApp\Elastix'):
     '''
     Registed Image by Elastix. This is depended on the Elastix.
 
@@ -335,6 +339,8 @@ def RegisteByElastix(elastix_folder, moving_image_path, transform_folder):
     if os.path.exists(temp_folder):
         shutil.rmtree(temp_folder)
 
+#########################################################################
+
 def FindNfitiDWIConfigFile(file_path, is_allow_vec_missing=True):
     file_name = os.path.splitext(file_path)[0]
 
@@ -374,7 +380,7 @@ def SeparateNfitiDWIFile(dwi_file_path):
             store_path = os.path.splitext(dwi_file)[0] + '_b' + one_b + '.nii'
             nb.save(one_dwi, store_path)
 
-def FindTargetBvalue(candidate_list):
+def ExtractBvalues(candidate_list):
     b_value = []
     for file in candidate_list:
         b_str = ''
@@ -389,25 +395,18 @@ def FindTargetBvalue(candidate_list):
 
     return b_value
 
-        # if specific_bvalue < 0:
-        #     for b, dwi_image in zip(bvalue_list, dwi_list):
-        #         store_path = os.path.splitext(dwi_file)[0] + '_b' + b + '.nii'
-        #         sitk.WriteImage(dwi_image, store_path)
-        # else:
-        #     diff = abs(np.array(list(map(int, bvalue_list))) - specific_bvalue)
-        #     if min(diff) > tol:
-        #         return
-        #     else:
-        #         index = np.argmin(diff)
-        #         store_path = os.path.splitext(dwi_file)[0] + '_b' + bvalue_list[index] + '.nii'
-        #         sitk.WriteImage(dwi_list[index], store_path)
-
-def FindseparatedDWIFile(candidate_list):
+def FindDWIFile(candidate_list, is_separate=False):
     dwi_list = []
-    for dwi in candidate_list:
-        if ('dwi' in dwi) or ('diff' in dwi) and ('_b' in dwi) and (('.nii' in dwi) or ('.nii.gz' in dwi)):
-            dwi_list.append(dwi)
+    if is_separate:
+        for dwi in candidate_list:
+            if (('dwi' in dwi) or ('diff' in dwi)) and ('_b' in dwi) and (('.nii' in dwi) or ('.nii.gz' in dwi)):
+                dwi_list.append(dwi)
+    else:
+        for dwi in candidate_list:
+            if (('dwi' in dwi) or ('diff' in dwi)) and ('_b' not in dwi) and (('.nii' in dwi) or ('.nii.gz' in dwi)):
+                dwi_list.append(dwi)
     return dwi_list
+
 
 ################################################################################
 # def SimulateDWI(adc_image, low_b_value_image, low_b_value, target_b_value, target_file_path, ref=''):

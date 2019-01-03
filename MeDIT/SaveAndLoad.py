@@ -128,7 +128,7 @@ def LoadNiiHeader(file_path, is_show_info=True):
     shape = []
     for d in range(dimension):
         spaceing.append(float(info['pixdim[' + str(d+1) + ']']))
-        shape.append(float(info['dim[' + str(d + 1) + ']']))
+        shape.append(int(info['dim[' + str(d + 1) + ']']))
 
     info['dimension'] = dimension
     info['spacing'] = spaceing

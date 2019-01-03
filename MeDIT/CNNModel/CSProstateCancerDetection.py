@@ -345,10 +345,6 @@ class CST2AdcDwiDetect2_5D():
         if self.__model == None:
             self.LoadModel(fold_path=detect_model_path)
 
-        if not ((t2_image.GetSpacing() == adc_image.GetSpacing()) and (
-                dwi_image.GetSpacing() == prostate_roi_image.GetSpacing())):
-            print("The spacing is not consistant among mp-mr images")
-            return
         if not ((t2_image.GetSize() == adc_image.GetSize()) and (dwi_image.GetSize() == prostate_roi_image.GetSize())):
             print("The size is not consistant among mp-mr images")
             return
