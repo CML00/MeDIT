@@ -2,7 +2,20 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from collections import OrderedDict
 
+random_2d_augment = {
+    'stretch_x': 0.1,
+    'stretch_y': 0.1,
+    'shear': 0.1,
+    'shift_x': 4,
+    'shift_y': 4,
+    'rotate_z_angle': 20,
+    'horizontal_flip': True
+}
+
 class AugmentParametersGenerator():
+    '''
+    To generate random parameters for 2D or 3D numpy array transform.
+    '''
     def __init__(self):
         self.stretch_x = 0.0
         self.stretch_y = 0.0
@@ -103,6 +116,10 @@ class AugmentParametersGenerator():
         return OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
 
 class DataAugmentor3D():
+    '''
+    To process 3D numpy array transform. The transform contains: stretch in 3 dimensions, shear along x direction,
+    rotation around z and x axis, shift along x, y, z direction, and flip along x, y, z direction.
+    '''
     def __init__(self):
         self.stretch_x = 1.0
         self.stretch_y = 1.0
@@ -218,6 +235,10 @@ class DataAugmentor3D():
         return target_data
 
 class DataAugmentor2D():
+    '''
+    To process 2D numpy array transform. The transform contains: stretch in x, y dimensions, shear along x direction,
+    rotation, shift along x, y direction, and flip along x, y direction.
+    '''
     def __init__(self):
         self.stretch_x = 1.0
         self.stretch_y = 1.0
@@ -290,6 +311,9 @@ class DataAugmentor2D():
         return result
 
     def Execute(self, source_data, aug_parameter={}, interpolation_method='nearest', is_clear=False):
+        if np.max(source_data) < 1e-6:
+            return source_data
+
         if source_data.ndim != 2:
             print('Input the data with 2 dimensions!')
             return source_data
@@ -309,27 +333,27 @@ class DataAugmentor2D():
 
 def main():
     pass
-    random_params = {'stretch_x': 0.1, 'stretch_y': 0.1, 'shear': 0.1, 'rotate_z_angle': 20, 'horizontal_flip': True}
-    param_generator = AugmentParametersGenerator()
-    aug_generator = DataAugmentor2D()
+    # random_params = {'stretch_x': 0.1, 'stretch_y': 0.1, 'shear': 0.1, 'rotate_z_angle': 20, 'horizontal_flip': True}
+    # param_generator = AugmentParametersGenerator()
+    # aug_generator = DataAugmentor2D()
 
-    from SaveAndLoad import LoadNiiData
+    # from MeDIT.SaveAndLoad import LoadNiiData
     # _, _, data = LoadNiiData(data_path)
     # _, _, roi = LoadNiiData(roi_path)
 
-    data = data[..., data.shape[2] // 2]
-    roi = roi[..., roi.shape[2] // 2]
+    # data = data[..., data.shape[2] // 2]
+    # roi = roi[..., roi.shape[2] // 2]
 
-    from Visualization import DrawBoundaryOfBinaryMask
-    from Normalize import Normalize01
+    # from Visualization import DrawBoundaryOfBinaryMask
+    # from Normalize import Normalize01
 
-    while True:
-        param_generator.RandomParameters(random_params)
-        aug_generator.SetParameter(param_generator.GetRandomParametersDict())
-
-        new_data = aug_generator.Execute(data, interpolation_method='linear')
-        new_roi = aug_generator.Execute(roi, interpolation_method='nearest')
-        DrawBoundaryOfBinaryMask(Normalize01(new_data), new_roi)
+    # while True:
+    #     param_generator.RandomParameters(random_params)
+    #     aug_generator.SetParameter(param_generator.GetRandomParametersDict())
+    #
+    #     new_data = aug_generator.Execute(data, interpolation_method='linear')
+    #     new_roi = aug_generator.Execute(roi, interpolation_method='nearest')
+    #     DrawBoundaryOfBinaryMask(Normalize01(new_data), new_roi)
 
 if __name__ == '__main__':
     main()

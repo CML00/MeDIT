@@ -2,6 +2,11 @@ from scipy.ndimage.morphology import binary_dilation, binary_erosion
 import numpy as np
 
 def BluryEdgeOfROI(initial_ROI):
+    '''
+    This function blurry the ROI. This function can be used when the ROI was drawn not definitely.
+    :param initial_ROI: The binary ROI image, support 2D and 3D
+    :return:
+    '''
     if len(np.shape(initial_ROI)) == 2:
         kernel = np.ones((3, 3))
     elif len(np.shape(initial_ROI)) == 3:

@@ -22,7 +22,7 @@ def DiceCoef(y_true, y_pred):
     return (2. * intersection + 1.) / (K.sum(y_true_f) + K.sum(y_pred_f) + 1.)
 
 def DiceCoefLoss(y_true, y_pred):
-    return 1. - dice_coef(y_true, y_pred)
+    return 1. - DiceCoef(y_true, y_pred)
 
 def GetHiddenLayers2D(model, input_data, store_folder):
     if isinstance(input_data, list):
